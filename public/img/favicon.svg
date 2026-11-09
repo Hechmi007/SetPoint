@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Simplified mark for tiny sizes: thick rim, no seams, bigger crescent and star -->
+  <circle cx="50" cy="50" r="44" fill="#fff" stroke="#E70013" stroke-width="12"/>
+  <circle cx="45" cy="50" r="25" fill="#E70013"/>
+  <circle cx="53" cy="50" r="20" fill="#fff"/>
+  <path d="M45.5,50 L58.5,45.5 L58.6,36.2 L66.6,43.8 L75.2,41.2 L69.4,50 L75.2,58.8 L66.6,56.2 L58.6,63.8 L58.5,54.5 Z" fill="#E70013"/>
+</svg>

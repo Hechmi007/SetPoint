@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Panier — SETPOINT</title>
+<link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/css/style.css">
 <link rel="stylesheet" href="/css/fonts.css">
 <style>
@@ -28,7 +29,7 @@
 </head>
 <body>
 <header class="nav">
-  <a class="logo" href="/">SETPOINT</a>
+  <a class="logo" href="/"><img src="/img/logo-mark.svg" alt="" width="32" height="32">SETPOINT</a>
   <nav><a href="/#boutique">Boutique</a><a class="cart-link" href="/panier">Panier <span class="cart-count" data-n="0">0</span></a></nav>
 </header>
 
@@ -164,7 +165,8 @@ function showDone(data, payload) {
   const msg = `Bonjour SETPOINT ! Je viens de passer la commande ${data.ref} (${data.total} DT) au nom de ${payload.customer.name}.`;
   view.innerHTML = `<div class="done card">
     <div style="font-size:3rem">🎾</div>
-    <h1 style="font-size:2rem">Merci pour votre commande !</h1>
+    <h1 style="font-size:2rem">Yaatik saha ! <span class="ar" lang="ar" style="color:var(--tn)">يعطيك الصحة</span></h1>
+    <p style="margin-top:-8px">Merci pour votre commande, et merci de soutenir le fait en Tunisie <img class="flag" src="/img/flag-tn.svg" alt=""></p>
     <p>Votre numéro de commande :</p>
     <div class="ref">${esc(data.ref)}</div>
     <p>Nous vous appelons très vite au <strong>${esc(payload.customer.phone)}</strong> pour confirmer avant de lancer l’impression de votre compteur.</p>

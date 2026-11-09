@@ -9,7 +9,8 @@ a{color:inherit}
 .nav{position:sticky;top:0;z-index:20;background:var(--g);color:#fff;padding:12px 20px;padding-top:calc(12px + env(safe-area-inset-top,0px));display:flex;justify-content:space-between;align-items:center;gap:12px}
 .nav nav{display:flex;align-items:center;gap:18px}
 .nav nav a{color:#fff;text-decoration:none;font-weight:600;font-size:.95rem}
-.logo{font-family:"Arial Black",system-ui,sans-serif;letter-spacing:.12em;color:#fff;text-decoration:none}
+.logo{font-family:"Arial Black",system-ui,sans-serif;letter-spacing:.12em;color:#fff;text-decoration:none;display:inline-flex;align-items:center;gap:10px}
+.logo img{display:block;flex:none}
 .cart-link{position:relative;display:inline-flex;align-items:center;gap:6px}
 .cart-count{background:#efc84a;color:#12382a;border-radius:99px;font-size:.75rem;font-weight:800;min-width:20px;height:20px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center}
 .cart-count[data-n="0"]{display:none}
@@ -68,3 +69,29 @@ input:focus,select:focus,textarea:focus{border-color:var(--g2);box-shadow:0 0 0 
 /* toast */
 .toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,40px);opacity:0;background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:99px;font-weight:600;transition:.3s;z-index:50;pointer-events:none;max-width:calc(100% - 32px);text-align:center}
 .toast.on{transform:translate(-50%,0);opacity:1}
+
+/* ---------- Tunisian touch ---------- */
+:root{--tn:#E70013}
+.ar{font-family:"Reem Kufi","Noto Kufi Arabic","Segoe UI",Tahoma,sans-serif;font-weight:600}
+/* red & white band inspired by the studs of traditional Tunisian doors */
+.tn-band{height:14px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='14'%3E%3Cpath d='M7 1.5 12.5 7 7 12.5 1.5 7Z' fill='%23E70013'/%3E%3Ccircle cx='21' cy='7' r='2.2' fill='%23E70013'/%3E%3C/svg%3E") repeat-x center/28px 14px}
+.tn-pill{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--card);border:1.5px solid var(--tn);color:var(--ink);border-radius:99px;padding:5px 14px 5px 6px;font-weight:700;font-size:.85rem;margin-bottom:14px;box-shadow:var(--sh)}
+.tn-pill img{width:24px;height:24px}
+.tn-pill .ar{color:var(--tn);font-size:.95rem}
+.darija{margin:-4px 0 14px;color:var(--mut);font-size:.95rem}
+.darija .ar{color:var(--tn);font-size:1.15rem;margin-left:6px}
+.tn-section{background:var(--card);padding:0}
+.tn-section .w{padding-top:56px;padding-bottom:56px}
+.tn-head{display:grid;gap:18px;align-items:center;margin-bottom:28px}
+@media(min-width:800px){.tn-head{grid-template-columns:auto 1fr}}
+.tn-head img{width:120px;height:120px}
+.tn-head h2{margin-bottom:6px}
+.tn-head .ar{color:var(--tn);font-size:1.4rem;margin:0}
+.tn-cards{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.tn-card{border-radius:20px;padding:22px;background:var(--bg);border-top:4px solid var(--tn)}
+.tn-card h3{font-size:1.1rem;margin-bottom:6px}
+.tn-card p{margin:0;color:var(--mut);font-size:.93rem}
+.made-in{display:inline-flex;align-items:center;gap:8px;font-weight:700}
+footer .tn-line{margin:6px 0 14px}
+footer .tn-line .ar{font-size:1.1rem;margin-left:6px}
+.flag{display:inline-block;width:1.35em;height:.9em;vertical-align:-.08em;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08)}

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 110" role="img" aria-label="SETPOINT — 100% tunisien">
+  <g transform="translate(5 5) scale(1)">
+    <circle cx="50" cy="50" r="46" fill="#fff" stroke="#E70013" stroke-width="7"/>
+    <path d="M17,21 C28,37 28,63 17,79" fill="none" stroke="#E70013" stroke-width="3.6" stroke-linecap="round"/>
+    <path d="M83,21 C72,37 72,63 83,79" fill="none" stroke="#E70013" stroke-width="3.6" stroke-linecap="round"/>
+    <circle cx="47" cy="50" r="20" fill="#E70013"/>
+    <circle cx="53" cy="50" r="16" fill="#fff"/>
+    <path d="M47.50,50.00 L53.51,47.83 L53.72,41.44 L57.64,46.48 L63.78,44.71 L60.20,50.00 L63.78,55.29 L57.64,53.52 L53.72,58.56 L53.51,52.17 Z" fill="#E70013"/>
+  </g>
+  <text x="118" y="64" font-family="'Arial Black','Arial',sans-serif" font-weight="900" font-size="46" letter-spacing="2" fill="#12382a">SETPOINT</text>
+  <rect x="120" y="78" width="26" height="4" rx="2" fill="#E70013"/>
+  <text x="154" y="86" font-family="'Arial','Helvetica',sans-serif" font-weight="700" font-size="15" letter-spacing="4.2" fill="#5d5d58">100% TUNISIEN</text>
+</svg>
