@@ -2,6 +2,12 @@
   publish = "public"
   functions = "netlify/functions"
 
+# MONGODB_DB is just the database name ("setpoint"), not a secret. Without this, Netlify's secret
+# scanner finds the word "setpoint" all over the code and fails the build. Real secrets
+# (MONGODB_URI, ADMIN_PATH, ADMIN_PASSWORD_HASH, AUTH_SECRET) are still scanned.
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "MONGODB_DB"
+
 [functions]
   node_bundler = "esbuild"
 
