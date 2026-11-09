@@ -32,7 +32,11 @@
 .sw:hover{transform:scale(1.08)}
 .sw[aria-checked="true"]{box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--g2)}
 .sw[aria-checked="true"]::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;color:var(--chk,#fff);font-size:1.1rem}
-.sw:disabled{opacity:.3;cursor:not-allowed}
+.sw:disabled{cursor:not-allowed;opacity:.6;overflow:hidden}
+.sw:disabled::before{content:"";position:absolute;left:50%;top:-10%;width:3px;height:120%;background:#d32f2f;transform:translateX(-50%) rotate(45deg);border-radius:2px}
+.sw:disabled:hover{transform:none}
+.soon{margin-top:12px;font-size:.82rem;color:var(--mut)}
+.soon i{display:inline-block;width:3px;height:14px;background:#d32f2f;transform:rotate(45deg);vertical-align:-2px;margin:0 8px 0 4px}
 .current{margin-top:10px;font-size:.9rem;color:var(--mut)}
 .warn{margin-top:10px;font-size:.85rem;color:#a15c00;background:#fff3dc;border-radius:10px;padding:8px 12px}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .warn{background:#3a2c12;color:#ffcf80}}
@@ -83,6 +87,7 @@
         <div class="note" id="partHint"></div>
         <div class="palette" id="palette" role="radiogroup"></div>
         <div class="current" id="current"></div>
+        <div class="soon"><i></i>Couleurs barrées : bientôt disponibles</div>
         <div class="warn" id="warn" hidden>L’écriture et le corps ont la même couleur : les chiffres seront peu lisibles.</div>
       </div>
 
@@ -106,7 +111,7 @@
           <button class="btn p" id="add" type="button">Ajouter au panier</button>
           <button class="btn s" id="buyNow" type="button">Commander maintenant</button>
         </div>
-        <p class="note" style="margin:12px 0 0">🎁 Porte-clé personnalisé offert · 🚚 Livraison gratuite Grand Tunis</p>
+        <p class="note" style="margin:12px 0 0">🎁 Porte-clé personnalisé offert · 🚚 Livraison partout en Tunisie</p>
       </div>
     </div>
   </div>
@@ -158,9 +163,10 @@ function render() {
   const part = product.parts.find((p) => p.id === active);
   document.getElementById('partName').textContent = part.label;
   document.getElementById('partHint').textContent = part.hint;
-  document.getElementById('palette').innerHTML = avail.map((c) => `
+  document.getElementById('palette').innerHTML = COLORS.map((c) => c.available ? `
     <button type="button" class="sw" role="radio" data-color="${c.id}" aria-checked="${colors[active] === c.id}"
-      aria-label="${esc(c.name)}" title="${esc(c.name)}" style="background:${c.hex};--chk:${isLight(c.hex) ? '#1c1c1c' : '#fff'}"></button>`).join('');
+      aria-label="${esc(c.name)}" title="${esc(c.name)}" style="background:${c.hex};--chk:${isLight(c.hex) ? '#1c1c1c' : '#fff'}"></button>` : `
+    <button type="button" class="sw" disabled aria-label="${esc(c.name)} — bientôt disponible" title="${esc(c.name)} — bientôt disponible" style="background:${c.hex}"></button>`).join('');
   document.getElementById('current').innerHTML = `${esc(part.label)} : <strong>${esc(getColor(colors[active]).name)}</strong>`;
   document.getElementById('warn').hidden = !(colors.body && colors.body === colors.writing);
 
@@ -176,7 +182,7 @@ document.getElementById('parts').addEventListener('click', (e) => {
   const b = e.target.closest('[data-part]'); if (b) select(b.dataset.part);
 });
 document.getElementById('palette').addEventListener('click', (e) => {
-  const b = e.target.closest('[data-color]'); if (!b) return;
+  const b = e.target.closest('[data-color]'); if (!b || b.disabled) return;
   colors[active] = b.dataset.color; render();
 });
 

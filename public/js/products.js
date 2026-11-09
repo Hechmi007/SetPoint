@@ -5,24 +5,29 @@
 //   1. Draw an SVG in /public/products/<id>.svg and tag each colorable piece with data-part="<partId>"
 //   2. Add an entry to PRODUCTS below.
 
-// Filament colors available in the workshop. Set `available: false` to hide one when out of stock.
+// Filament colors. In stock now: listed first. `available: false` = shown crossed out as "bientôt disponible"
+// and refused by the server. Flip it to true when the filament arrives.
 export const COLORS = [
-  { id: 'black',     name: 'Noir',          hex: '#232526' },
   { id: 'white',     name: 'Blanc',         hex: '#f4f2ec' },
   { id: 'grey',      name: 'Gris',          hex: '#9a9c9e' },
-  { id: 'red',       name: 'Rouge',         hex: '#e0422f' },
-  { id: 'orange',    name: 'Orange',        hex: '#e98a52' },
   { id: 'yellow',    name: 'Jaune',         hex: '#efc84a' },
-  { id: 'olive',     name: 'Vert olive',    hex: '#7f9653' },
-  { id: 'green',     name: 'Vert foncé',    hex: '#1f5d3f' },
-  { id: 'teal',      name: 'Bleu canard',   hex: '#16808a' },
-  { id: 'sky',       name: 'Bleu ciel',     hex: '#33b6dc' },
-  { id: 'navy',      name: 'Bleu marine',   hex: '#1d2f66' },
-  { id: 'lavender',  name: 'Lavande',       hex: '#a9a6d9' },
-  { id: 'purple',    name: 'Violet',        hex: '#a477cf' },
-  { id: 'burgundy',  name: 'Bordeaux',      hex: '#7a2638' },
-  { id: 'brown',     name: 'Marron',        hex: '#704a35' },
-  { id: 'pink',      name: 'Rose',          hex: '#ef8fb4' },
+  { id: 'orange',    name: 'Orange',        hex: '#f07f2c' },
+  { id: 'salmon',    name: 'Saumon',        hex: '#f4a083' },
+  { id: 'red',       name: 'Rouge',         hex: '#e0422f' },
+  { id: 'black',     name: 'Noir',          hex: '#232526' },
+  { id: 'beige',     name: 'Beige',         hex: '#dccaa6' },
+  { id: 'bronze',    name: 'Bronze',        hex: '#9c6a3a' },
+  // coming soon
+  { id: 'olive',     name: 'Vert olive',    hex: '#7f9653', available: false },
+  { id: 'green',     name: 'Vert foncé',    hex: '#1f5d3f', available: false },
+  { id: 'teal',      name: 'Bleu canard',   hex: '#16808a', available: false },
+  { id: 'sky',       name: 'Bleu ciel',     hex: '#33b6dc', available: false },
+  { id: 'navy',      name: 'Bleu marine',   hex: '#1d2f66', available: false },
+  { id: 'lavender',  name: 'Lavande',       hex: '#a9a6d9', available: false },
+  { id: 'purple',    name: 'Violet',        hex: '#a477cf', available: false },
+  { id: 'burgundy',  name: 'Bordeaux',      hex: '#7a2638', available: false },
+  { id: 'brown',     name: 'Marron',        hex: '#704a35', available: false },
+  { id: 'pink',      name: 'Rose',          hex: '#ef8fb4', available: false },
 ].map((c) => ({ available: true, ...c }));
 
 // Fonts offered for the raised writing. `family` must match the Google Fonts link in /css/fonts.css.
@@ -55,18 +60,17 @@ export const PRODUCTS = [
     defaultFont: 'comic',
     presets: [
       { name: 'Classique', font: 'comic',   colors: { body: 'black', writing: 'grey',  pinsLeft: 'black', pinsRight: 'red' } },
-      { name: 'Court',     font: 'sport',   colors: { body: 'green', writing: 'white', pinsLeft: 'white', pinsRight: 'yellow' } },
-      { name: 'Océan',     font: 'round',   colors: { body: 'sky',   writing: 'navy',  pinsLeft: 'navy',  pinsRight: 'red' } },
-      { name: 'Soleil',    font: 'marker',  colors: { body: 'yellow',writing: 'black', pinsLeft: 'black', pinsRight: 'red' } },
-      { name: 'Lavande',   font: 'round',   colors: { body: 'lavender', writing: 'purple', pinsLeft: 'black', pinsRight: 'red' } },
-      { name: 'Neige',     font: 'digital', colors: { body: 'white', writing: 'black', pinsLeft: 'grey',  pinsRight: 'orange' } },
+      { name: 'Neige',     font: 'digital', colors: { body: 'white',  writing: 'black',  pinsLeft: 'grey',   pinsRight: 'orange' } },
+      { name: 'Soleil',    font: 'marker',  colors: { body: 'yellow', writing: 'black',  pinsLeft: 'black',  pinsRight: 'red' } },
+      { name: 'Sable',     font: 'slab',    colors: { body: 'beige',  writing: 'bronze', pinsLeft: 'bronze', pinsRight: 'red' } },
+      { name: 'Corail',    font: 'round',   colors: { body: 'salmon', writing: 'black',  pinsLeft: 'white',  pinsRight: 'red' } },
+      { name: 'Bronze',    font: 'sport',   colors: { body: 'bronze', writing: 'beige',  pinsLeft: 'black',  pinsRight: 'orange' } },
     ],
   },
 ];
 
-export const SHIPPING = {
-  freeGovernorates: ['Tunis', 'Ariana', 'Ben Arous', 'La Manouba'],
-};
+// Flat delivery fee for every order, all over Tunisia (DT). The server adds it to the total.
+export const SHIPPING = { price: 8, label: 'Livraison' };
 
 export const GOVERNORATES = [
   'Tunis', 'Ariana', 'Ben Arous', 'La Manouba', 'Nabeul', 'Zaghouan', 'Bizerte', 'Béja', 'Jendouba',

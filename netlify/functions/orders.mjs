@@ -61,7 +61,6 @@ export default async (req) => {
   }
 
   const subtotal = items.reduce((s, it) => s + it.unitPrice * it.qty, 0);
-  const freeShipping = SHIPPING.freeGovernorates.includes(customer.governorate);
 
   const order = {
     ref: newRef(),
@@ -71,8 +70,8 @@ export default async (req) => {
     keychainName,
     items,
     subtotal,
-    shipping: freeShipping ? { label: 'Gratuite Grand Tunis', price: 0 } : { label: 'À confirmer', price: null },
-    total: subtotal,
+    shipping: { label: SHIPPING.label, price: SHIPPING.price },
+    total: subtotal + SHIPPING.price,
     history: [{ status: 'new', at: new Date().toISOString() }],
   };
 

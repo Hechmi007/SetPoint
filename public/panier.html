@@ -57,7 +57,7 @@
         <div class="field full sum" aria-live="polite">
           <div><span>Sous-total</span><span id="sub"></span></div>
           <div><span>Porte-clé personnalisé</span><span>Offert</span></div>
-          <div><span>Livraison</span><span id="ship">Gratuite Grand Tunis</span></div>
+          <div><span>Livraison (toute la Tunisie)</span><span id="ship"></span></div>
           <div class="tot"><span>Total</span><span id="tot"></span></div>
         </div>
       </div>
@@ -107,10 +107,9 @@ function render() {
 
 function updateSummary() {
   const sub = getCart().reduce((s, it) => s + (getProduct(it.productId) ? lineTotal(it) : 0), 0);
-  const gov = view.querySelector('#gov').value;
   view.querySelector('#sub').textContent = money(sub);
-  view.querySelector('#tot').textContent = money(sub);
-  view.querySelector('#ship').textContent = !gov || SHIPPING.freeGovernorates.includes(gov) ? 'Gratuite Grand Tunis' : 'À confirmer par téléphone';
+  view.querySelector('#ship').textContent = money(SHIPPING.price);
+  view.querySelector('#tot').textContent = money(sub + SHIPPING.price);
 }
 
 view.addEventListener('click', (e) => {
