@@ -1,7 +1,7 @@
 // POST /api/orders — a customer places an order. Prices are recomputed server-side.
 import crypto from 'node:crypto';
 import { getProduct, getColor, getFont, GOVERNORATES, SHIPPING } from '../../public/js/products.js';
-import { insertOrder } from '../lib/db.mjs';
+import { insertOrder, classifyDbError } from '../lib/db.mjs';
 import { json, error, readJson } from '../lib/http.mjs';
 
 const clean = (v, max) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
@@ -78,8 +78,9 @@ export default async (req) => {
   try {
     await insertOrder(order);
   } catch (e) {
-    console.error('insertOrder failed', e);
-    return error('Impossible d’enregistrer la commande. Réessayez ou contactez-nous sur WhatsApp.', 500);
+    const code = classifyDbError(e);
+    console.error('insertOrder failed', code, e);
+    return json({ error: `Impossible d’enregistrer la commande (code : ${code}). Réessayez ou contactez-nous sur WhatsApp.`, code }, 500);
   }
 
   return json({ ok: true, ref: order.ref, total: order.total, shipping: order.shipping }, 201);

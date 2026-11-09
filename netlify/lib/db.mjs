@@ -38,6 +38,23 @@ function useMongo() {
 
 const strip = ({ _id, ...rest }) => rest;
 
+/** Short, secret-free reason for a database failure (shown to visitors and in /api/health). */
+export function classifyDbError(e) {
+  const msg = `${e?.name || ''} ${e?.message || ''}`;
+  if (/MONGODB_URI is not configured/.test(msg)) return 'config-missing';
+  if (/Invalid scheme|MongoParseError|MongoAPIError|ENOTFOUND|URI must|connection string/i.test(msg)) return 'uri-invalid';
+  if (/bad auth|Authentication failed|AuthenticationFailed/i.test(msg) || e?.code === 18 || e?.code === 8000) return 'auth-failed';
+  if (/ServerSelection|timed out|ECONNREFUSED|ETIMEDOUT|ECONNRESET|whitelist|SSL|TLS/i.test(msg)) return 'network-blocked';
+  return 'db-error';
+}
+
+/** Checks the database connection (used by /api/health). */
+export async function pingDb() {
+  if (!useMongo()) return 'file-store';
+  await (await mongoCollection()).estimatedDocumentCount();
+  return 'ok';
+}
+
 export async function insertOrder(order) {
   if (useMongo()) {
     await (await mongoCollection()).insertOne({ ...order });
