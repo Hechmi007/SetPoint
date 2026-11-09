@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SETPOINT — Accessoires padel &amp; tennis</title>
+<meta name="description" content="SETPOINT : compteur de score personnalisable pour raquette de padel et de tennis. Choisissez vos couleurs, livraison en Tunisie.">
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="nav">
+  <a class="logo" href="/">SETPOINT</a>
+  <nav><a href="/#boutique">Boutique</a><a class="cart-link" href="/panier">Panier <span class="cart-count" data-n="0">0</span></a></nav>
+</header>
+
+<main>
+<section><div class="w hero">
+  <div>
+    <h1>Restez dans le match. Pas dans le doute.</h1>
+    <p>Le compteur de score compact qui se fixe sur votre raquette de padel ou de tennis. <strong>Désormais 100 % personnalisable</strong> : choisissez la couleur du corps, de l’écriture, des curseurs et des fixations.</p>
+    <div class="price">25 DT</div>
+    <ul class="c"><li>Porte-clé personnalisé offert avec le prénom de votre choix</li><li>Livraison gratuite Grand Tunis</li><li>16 couleurs à combiner</li></ul>
+    <a class="btn p" href="/produit?id=compteur-score">Créer le mien</a> <a class="btn s" href="#details">Découvrir le produit</a>
+  </div>
+  <div class="ph r45"><img src="/img/compteur.jpg" alt="Compteur de score SETPOINT fixé devant une raquette"></div>
+</div></section>
+
+<section id="boutique" style="background:var(--card)"><div class="w rv">
+  <h2>La boutique</h2>
+  <p class="note" style="margin-top:-6px">Chaque pièce est imprimée à la commande, dans les couleurs que vous choisissez.</p>
+  <div class="products" id="products"></div>
+</div></section>
+
+<section><div class="w rv">
+  <h2>Pensé pour vous accompagner sur le court.</h2>
+  <div class="two">
+    <div class="ph r45"><img src="/img/padel.jpg" alt="Compteur de score sur une raquette de padel" loading="lazy"></div>
+    <div class="ph r45"><img src="/img/tennis.jpg" alt="Compteur de score sur une raquette de tennis" loading="lazy"></div>
+  </div>
+</div></section>
+
+<section id="details" style="padding-top:0"><div class="w rv">
+  <h2>Chaque détail compte.</h2>
+  <div class="three">
+    <div class="ph r11"><img src="/img/face.jpg" alt="Vue de face du compteur" loading="lazy"></div>
+    <div class="ph r11"><img src="/img/mecanisme.jpg" alt="Mécanisme à curseurs" loading="lazy"></div>
+    <div class="ph r11"><img src="/img/couleurs.jpg" alt="Compteurs dans différentes couleurs" loading="lazy"></div>
+  </div>
+</div></section>
+
+<section style="padding-top:0"><div class="w three rv">
+  <div class="card"><h3>🛡️ Robuste</h3><p>Design robuste et flexible, résistant aux chocs et aux températures.</p></div>
+  <div class="card"><h3>🪶 Léger</h3><p>Ne pèse que 2,4 g, avec un adhésif durable qui supporte jusqu’à 10 kg.</p></div>
+  <div class="card"><h3>🎨 Le vôtre</h3><p>Composez votre combinaison de couleurs pièce par pièce, comme vous l’imaginez.</p></div>
+</div></section>
+
+<section style="padding-top:0"><div class="w rv"><div class="gift">
+  <div>
+    <h2>Un petit cadeau en plus !</h2>
+    <p>Pour chaque commande, recevez gratuitement un porte-clé personnalisé avec le prénom de votre choix.</p>
+    <strong>Inclus sans supplément.</strong>
+  </div>
+  <img src="/img/porte-cle.jpg" alt="Porte-clé SETPOINT personnalisé avec prénom" loading="lazy">
+</div></div></section>
+</main>
+
+<footer>
+  <div class="logo" style="font-size:1.3rem">SETPOINT</div>
+  <p>Padel &amp; Tennis · Tunisia 🇹🇳</p>
+  <p><a href="#">Instagram</a> · <a href="#">Facebook</a> · <a href="#">TikTok</a></p>
+</footer>
+
+<script type="module">
+import { PRODUCTS } from '/js/products.js';
+import { esc, money, revealOnScroll } from '/js/common.js';
+document.getElementById('products').innerHTML = PRODUCTS.map((p) => `
+  <a class="product-card" href="/produit?id=${esc(p.id)}">
+    <div class="ph r43"><img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy"></div>
+    <div class="body">
+      <span class="tag">Personnalisable</span>
+      <h3 style="margin:10px 0 4px">${esc(p.name)}</h3>
+      <div class="note">${esc(p.tagline)}</div>
+      <div class="row"><span class="amt">${money(p.price)}</span><span class="btn p sm">Personnaliser</span></div>
+    </div>
+  </a>`).join('');
+revealOnScroll();
+</script>
+</body>
+</html>

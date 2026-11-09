@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Personnaliser — SETPOINT</title>
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/fonts.css">
+<style>
+.studio{display:grid;gap:28px;align-items:start}
+@media(min-width:880px){.studio{grid-template-columns:1fr 1.05fr}}
+.stage{position:relative;border-radius:28px;background:radial-gradient(120% 90% at 50% 20%,#2a6e4c 0%,#12382a 70%);box-shadow:var(--sh);display:flex;align-items:center;justify-content:center;padding:28px 0;min-height:520px}
+@media(min-width:880px){.stage{position:sticky;top:84px;min-height:calc(100vh - 120px);max-height:760px}}
+.stage .preview{height:min(600px,70vh);aspect-ratio:168/524}
+.stage svg{filter:drop-shadow(0 18px 24px rgba(0,0,0,.45))}
+.stage [data-part]{cursor:pointer}
+.stage [data-part].hl{filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px rgba(255,255,255,.7))}
+.stage-hint{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:#d8e8de;font-size:.8rem}
+.panel h1{font-size:clamp(1.8rem,5vw,2.6rem);margin-bottom:6px}
+.step{background:var(--card);border-radius:22px;padding:22px;box-shadow:var(--sh);margin-top:18px}
+.step-title{display:flex;align-items:baseline;gap:10px;margin:0 0 14px;font-size:1.05rem}
+.step-title b{background:var(--g2);color:#fff;border-radius:99px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;flex:none}
+.parts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media(max-width:480px){.parts{grid-template-columns:repeat(2,1fr)}}
+.part-btn{border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:14px;padding:10px 8px;cursor:pointer;font:inherit;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;transition:border-color .15s}
+.part-btn[aria-pressed="true"]{border-color:var(--g2);background:var(--card);box-shadow:0 0 0 3px rgba(29,90,65,.16)}
+.part-btn .dot{width:26px;height:26px;border-radius:50%;border:1px solid rgba(0,0,0,.2)}
+.part-btn .lbl{font-weight:700;font-size:.85rem}
+.part-btn .cn{font-size:.72rem;color:var(--mut);line-height:1.2}
+.palette{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:10px;margin-top:14px}
+.sw{aspect-ratio:1;border-radius:50%;border:2px solid rgba(0,0,0,.15);cursor:pointer;position:relative;padding:0;transition:transform .15s}
+.sw:hover{transform:scale(1.08)}
+.sw[aria-checked="true"]{box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--g2)}
+.sw[aria-checked="true"]::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;color:var(--chk,#fff);font-size:1.1rem}
+.sw:disabled{opacity:.3;cursor:not-allowed}
+.current{margin-top:10px;font-size:.9rem;color:var(--mut)}
+.warn{margin-top:10px;font-size:.85rem;color:#a15c00;background:#fff3dc;border-radius:10px;padding:8px 12px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .warn{background:#3a2c12;color:#ffcf80}}
+.presets{display:flex;gap:8px;flex-wrap:wrap}
+.preset{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:99px;padding:6px 12px 6px 6px;cursor:pointer;font:inherit;font-size:.85rem;font-weight:600}
+.preset:hover{border-color:var(--g2)}
+.preset .mini{display:flex}.preset .mini i{width:14px;height:14px;border-radius:50%;margin-right:-4px;border:1.5px solid var(--card)}
+.fonts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(max-width:480px){.fonts{grid-template-columns:repeat(2,1fr)}}
+.font-btn{border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:14px;padding:10px 6px 8px;cursor:pointer;text-align:center;display:flex;flex-direction:column;gap:2px}
+.font-btn[aria-checked="true"]{border-color:var(--g2);background:var(--card);box-shadow:0 0 0 3px rgba(29,90,65,.16)}
+.font-btn .smp{font-size:1.35rem;line-height:1.2;white-space:nowrap}
+.font-btn .fn{font:600 .75rem system-ui,sans-serif;color:var(--mut)}
+.buy{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.qty{display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:99px;overflow:hidden;background:var(--card)}
+.qty button{border:0;background:transparent;color:var(--ink);width:42px;height:46px;font-size:1.3rem;cursor:pointer}
+.qty input{width:44px;border:0;text-align:center;padding:0;font-weight:700;background:transparent;box-shadow:none}
+.buy .total{font-weight:900;font-size:1.6rem;color:var(--g2);margin-left:auto}
+.buy .btn{flex:1 1 200px;text-align:center}
+.share{background:none;border:0;color:var(--mut);text-decoration:underline;cursor:pointer;font:inherit;font-size:.85rem;padding:0}
+</style>
+</head>
+<body>
+<header class="nav">
+  <a class="logo" href="/">SETPOINT</a>
+  <nav><a href="/#boutique">Boutique</a><a class="cart-link" href="/panier">Panier <span class="cart-count" data-n="0">0</span></a></nav>
+</header>
+
+<main class="w" style="padding-top:28px;padding-bottom:64px">
+  <div class="studio">
+    <div class="stage">
+      <div id="preview" aria-live="polite"></div>
+      <div class="stage-hint">Touchez une pièce pour la sélectionner</div>
+    </div>
+
+    <div class="panel">
+      <span class="tag">Atelier de personnalisation</span>
+      <h1 id="pname" style="margin-top:10px">Compteur de score</h1>
+      <p class="note" id="ptag" style="margin:0"></p>
+
+      <div class="step">
+        <h2 class="step-title"><b>1</b> Choisissez une pièce</h2>
+        <div class="parts" id="parts" role="group" aria-label="Pièces"></div>
+      </div>
+
+      <div class="step">
+        <h2 class="step-title"><b>2</b> <span>Couleur — <span id="partName">Corps</span></span></h2>
+        <div class="note" id="partHint"></div>
+        <div class="palette" id="palette" role="radiogroup"></div>
+        <div class="current" id="current"></div>
+        <div class="warn" id="warn" hidden>L’écriture et le corps ont la même couleur : les chiffres seront peu lisibles.</div>
+      </div>
+
+      <div class="step">
+        <h2 class="step-title"><b>3</b> Police de l’écriture</h2>
+        <div class="fonts" id="fonts" role="radiogroup" aria-label="Police"></div>
+      </div>
+
+      <div class="step">
+        <h2 class="step-title"><b>4</b> Ou partez d’une inspiration</h2>
+        <div class="presets" id="presets"></div>
+        <p style="margin:12px 0 0"><button class="share" id="random" type="button">🎲 Surprenez-moi</button> · <button class="share" id="share" type="button">🔗 Copier le lien de ma création</button></p>
+      </div>
+
+      <div class="step">
+        <div class="buy">
+          <div class="qty"><button type="button" id="minus" aria-label="Moins">−</button><input id="qty" type="number" min="1" max="20" value="1" inputmode="numeric" aria-label="Quantité"><button type="button" id="plus" aria-label="Plus">+</button></div>
+          <span class="total" id="total">25 DT</span>
+        </div>
+        <div class="buy" style="margin-top:14px">
+          <button class="btn p" id="add" type="button">Ajouter au panier</button>
+          <button class="btn s" id="buyNow" type="button">Commander maintenant</button>
+        </div>
+        <p class="note" style="margin:12px 0 0">🎁 Porte-clé personnalisé offert · 🚚 Livraison gratuite Grand Tunis</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import { getProduct, COLORS, getColor, FONTS, getFont } from '/js/products.js';
+import { renderPreview, paint, addToCart, money, esc, toast } from '/js/common.js';
+
+const params = new URLSearchParams(location.search);
+const product = getProduct(params.get('id') || 'compteur-score');
+if (!product) { location.href = '/'; throw new Error('unknown product'); }
+
+const colors = Object.fromEntries(product.parts.map((p) => [p.id, p.default]));
+// restore a shared design: ?c=black.grey.red.black
+(params.get('c') || '').split('.').forEach((id, i) => {
+  const part = product.parts[i];
+  if (part && getColor(id)?.available) colors[part.id] = id;
+});
+let font = getFont(params.get('f'))?.available ? params.get('f') : product.defaultFont;
+const availFonts = FONTS.filter((f) => f.available);
+let active = product.parts[0].id;
+
+document.title = `Personnaliser — ${product.name} — SETPOINT`;
+document.getElementById('pname').textContent = product.name;
+document.getElementById('ptag').textContent = product.tagline;
+
+const avail = COLORS.filter((c) => c.available);
+const isLight = (hex) => { const n = parseInt(hex.slice(1), 16); return ((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000 > 160; };
+
+const svg = await renderPreview(document.getElementById('preview'), product.id, colors, font);
+svg.querySelectorAll('[data-part]').forEach((g) => {
+  g.addEventListener('click', () => select(g.dataset.part));
+});
+
+function select(partId) { active = partId; render(); }
+
+function render() {
+  paint(svg, colors, font, product);
+  svg.querySelectorAll('[data-part]').forEach((g) => g.classList.toggle('hl', g.dataset.part === active));
+  setTimeout(() => svg.querySelectorAll('.hl').forEach((g) => g.classList.remove('hl')), 900);
+
+  document.getElementById('parts').innerHTML = product.parts.map((p) => {
+    const c = getColor(colors[p.id]);
+    return `<button type="button" class="part-btn" data-part="${p.id}" aria-pressed="${p.id === active}">
+      <span class="dot" style="background:${c.hex}"></span><span class="lbl">${esc(p.label)}</span><span class="cn">${esc(c.name)}</span></button>`;
+  }).join('');
+
+  const part = product.parts.find((p) => p.id === active);
+  document.getElementById('partName').textContent = part.label;
+  document.getElementById('partHint').textContent = part.hint;
+  document.getElementById('palette').innerHTML = avail.map((c) => `
+    <button type="button" class="sw" role="radio" data-color="${c.id}" aria-checked="${colors[active] === c.id}"
+      aria-label="${esc(c.name)}" title="${esc(c.name)}" style="background:${c.hex};--chk:${isLight(c.hex) ? '#1c1c1c' : '#fff'}"></button>`).join('');
+  document.getElementById('current').innerHTML = `${esc(part.label)} : <strong>${esc(getColor(colors[active]).name)}</strong>`;
+  document.getElementById('warn').hidden = !(colors.body && colors.body === colors.writing);
+
+  document.getElementById('fonts').innerHTML = availFonts.map((f) => `
+    <button type="button" class="font-btn" role="radio" data-font="${f.id}" aria-checked="${f.id === font}">
+      <span class="smp" style="font-family:'${f.family}',system-ui;font-weight:${f.weight}">15 30 AD</span><span class="fn">${esc(f.name)}</span></button>`).join('');
+
+  history.replaceState(null, '', `?id=${product.id}&c=${product.parts.map((p) => colors[p.id]).join('.')}&f=${font}`);
+  updateTotal();
+}
+
+document.getElementById('parts').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-part]'); if (b) select(b.dataset.part);
+});
+document.getElementById('palette').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-color]'); if (!b) return;
+  colors[active] = b.dataset.color; render();
+});
+
+document.getElementById('fonts').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-font]'); if (!b) return;
+  font = b.dataset.font; render();
+});
+document.getElementById('presets').innerHTML = product.presets.map((p, i) => `
+  <button type="button" class="preset" data-i="${i}"><span class="mini">${product.parts.map((pt) => `<i style="background:${getColor(p.colors[pt.id]).hex}"></i>`).join('')}</span>${esc(p.name)}</button>`).join('');
+document.getElementById('presets').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-i]'); if (!b) return;
+  const preset = product.presets[b.dataset.i];
+  Object.assign(colors, preset.colors);
+  if (getFont(preset.font)?.available) font = preset.font;
+  render();
+});
+document.getElementById('random').addEventListener('click', () => {
+  const pick = () => avail[Math.floor(Math.random() * avail.length)].id;
+  product.parts.forEach((p) => { colors[p.id] = pick(); });
+  while (colors.writing === colors.body) colors.writing = pick();
+  font = availFonts[Math.floor(Math.random() * availFonts.length)].id;
+  render();
+});
+document.getElementById('share').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(location.href); toast('Lien copié !'); }
+  catch { prompt('Copiez ce lien :', location.href); }
+});
+
+const qty = document.getElementById('qty');
+const getQty = () => Math.min(20, Math.max(1, parseInt(qty.value) || 1));
+function updateTotal() { document.getElementById('total').textContent = money(product.price * getQty()); }
+qty.addEventListener('input', updateTotal);
+qty.addEventListener('blur', () => { qty.value = getQty(); updateTotal(); });
+document.getElementById('minus').onclick = () => { qty.value = Math.max(1, getQty() - 1); updateTotal(); };
+document.getElementById('plus').onclick = () => { qty.value = Math.min(20, getQty() + 1); updateTotal(); };
+
+const add = () => addToCart({ productId: product.id, qty: getQty(), colors: { ...colors }, font });
+document.getElementById('add').onclick = () => { add(); toast('Ajouté au panier ✓ — vous pouvez créer un autre modèle'); };
+document.getElementById('buyNow').onclick = () => { add(); location.href = '/panier'; };
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Panier — SETPOINT</title>
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/fonts.css">
+<style>
+.checkout{display:grid;gap:24px;align-items:start}
+@media(min-width:880px){.checkout{grid-template-columns:1fr 1fr}}
+.line{display:flex;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
+.line:last-child{border-bottom:0}
+.line .info{flex:1;min-width:0}
+.line .chips{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:.78rem;color:var(--mut);margin-top:4px}
+.line .chips i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px;border:1px solid rgba(0,0,0,.2)}
+.line .ctrl{display:flex;align-items:center;gap:8px;margin-top:8px}
+.line .ctrl button{border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1rem}
+.line .rm{border:0!important;background:none!important;width:auto!important;color:var(--mut)!important;text-decoration:underline;font-size:.8rem!important}
+.line .amt{font-weight:800;white-space:nowrap}
+.sum div{display:flex;justify-content:space-between;padding:3px 0}
+.sum .tot{font-weight:900;font-size:1.2rem;border-top:1px solid var(--line);margin-top:6px;padding-top:8px}
+.empty{text-align:center;padding:48px 20px}
+.done{text-align:center;max-width:560px;margin:auto}
+.done .ref{font-family:ui-monospace,Consolas,monospace;font-size:1.4rem;font-weight:800;background:var(--beige);border-radius:12px;padding:8px 16px;display:inline-block;margin:8px 0 16px}
+#err{color:var(--err);font-weight:600}
+</style>
+</head>
+<body>
+<header class="nav">
+  <a class="logo" href="/">SETPOINT</a>
+  <nav><a href="/#boutique">Boutique</a><a class="cart-link" href="/panier">Panier <span class="cart-count" data-n="0">0</span></a></nav>
+</header>
+
+<main class="w" style="padding-top:32px;padding-bottom:64px">
+  <div id="view"></div>
+</main>
+
+<template id="tpl-checkout">
+  <h1 style="font-size:clamp(1.8rem,5vw,2.4rem)">Votre panier</h1>
+  <div class="checkout">
+    <div class="card">
+      <div id="lines"></div>
+      <p style="margin:12px 0 0"><a href="/produit?id=compteur-score">+ Créer un autre modèle</a></p>
+    </div>
+
+    <form class="card" id="f" novalidate>
+      <h2 style="font-size:1.3rem">Livraison</h2>
+      <div class="form-grid">
+        <div class="field"><label for="name">Nom et prénom</label><input id="name" autocomplete="name" placeholder="Votre nom" required></div>
+        <div class="field"><label for="phone">Téléphone</label><input id="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="ex. 20 123 456" required></div>
+        <div class="field full"><label for="gov">Gouvernorat</label><select id="gov" required><option value="">Choisir…</option></select></div>
+        <div class="field full"><label for="address">Adresse de livraison</label><textarea id="address" rows="2" autocomplete="street-address" placeholder="Rue, immeuble, ville…" required></textarea></div>
+        <div class="field full"><label for="keychain">🎁 Prénom pour le porte-clé offert</label><input id="keychain" maxlength="20" placeholder="Ex. Amine"></div>
+        <div class="field full"><label for="notes">Notes (facultatif)</label><textarea id="notes" rows="2" placeholder="Repère, horaire d’appel…"></textarea></div>
+        <div class="hp" aria-hidden="true"><label for="website">Site web</label><input id="website" tabindex="-1" autocomplete="off"></div>
+        <div class="field full sum" aria-live="polite">
+          <div><span>Sous-total</span><span id="sub"></span></div>
+          <div><span>Porte-clé personnalisé</span><span>Offert</span></div>
+          <div><span>Livraison</span><span id="ship">Gratuite Grand Tunis</span></div>
+          <div class="tot"><span>Total</span><span id="tot"></span></div>
+        </div>
+      </div>
+      <button class="btn p" style="width:100%;margin-top:18px" id="submit">Confirmer la commande</button>
+      <p id="err" role="alert"></p>
+      <p class="note" style="margin:0">Paiement à la livraison. Nous vous appelons pour confirmer avant de lancer l’impression.</p>
+    </form>
+  </div>
+</template>
+
+<script type="module">
+import { getProduct, getColor, getFont, GOVERNORATES, SHIPPING } from '/js/products.js';
+import { getCart, saveCart, renderPreview, money, esc, WHATSAPP } from '/js/common.js';
+
+const view = document.getElementById('view');
+const form = {};
+
+function lineTotal(it) { return getProduct(it.productId).price * it.qty; }
+
+function render() {
+  // drop items saved with an older version of the catalog (removed product/part/color)
+  const all = getCart();
+  const cart = all.filter((it) => { const p = getProduct(it.productId); return p && p.parts.every((pt) => getColor(it.colors?.[pt.id])?.available); });
+  if (cart.length !== all.length) saveCart(cart);
+  if (!cart.length) {
+    view.innerHTML = `<div class="empty card"><h2>Votre panier est vide</h2><p class="note">Créez votre compteur de score aux couleurs qui vous ressemblent.</p><a class="btn p" href="/produit?id=compteur-score">Personnaliser mon compteur</a></div>`;
+    return;
+  }
+  if (!view.querySelector('#f')) {
+    view.replaceChildren(document.getElementById('tpl-checkout').content.cloneNode(true));
+    setupForm();
+  }
+  const lines = view.querySelector('#lines');
+  lines.innerHTML = cart.map((it) => {
+    const p = getProduct(it.productId);
+    const chips = p.parts.map((pt) => { const c = getColor(it.colors[pt.id]); return `<span><i style="background:${c?.hex}"></i>${esc(pt.label)} : ${esc(c?.name)}</span>`; }).join('') + (getFont(it.font) ? `<span>Police : ${esc(getFont(it.font).name)}</span>` : '');
+    const c = encodeURIComponent(p.parts.map((pt) => it.colors[pt.id]).join('.')) + (it.font ? `&f=${encodeURIComponent(it.font)}` : '');
+    return `<div class="line" data-key="${esc(it.key)}">
+      <a class="thumb" href="/produit?id=${p.id}&c=${c}" title="Modifier"></a>
+      <div class="info"><strong>${esc(p.name)}</strong><div class="chips">${chips}</div>
+        <div class="ctrl"><button type="button" data-d="-1" aria-label="Moins">−</button><span>${it.qty}</span><button type="button" data-d="1" aria-label="Plus">+</button><button type="button" class="rm">Retirer</button></div></div>
+      <span class="amt">${money(lineTotal(it))}</span></div>`;
+  }).join('');
+  lines.querySelectorAll('.line').forEach((el, i) => renderPreview(el.querySelector('.thumb'), cart[i].productId, cart[i].colors, cart[i].font));
+  updateSummary();
+}
+
+function updateSummary() {
+  const sub = getCart().reduce((s, it) => s + (getProduct(it.productId) ? lineTotal(it) : 0), 0);
+  const gov = view.querySelector('#gov').value;
+  view.querySelector('#sub').textContent = money(sub);
+  view.querySelector('#tot').textContent = money(sub);
+  view.querySelector('#ship').textContent = !gov || SHIPPING.freeGovernorates.includes(gov) ? 'Gratuite Grand Tunis' : 'À confirmer par téléphone';
+}
+
+view.addEventListener('click', (e) => {
+  const line = e.target.closest('.line'); if (!line) return;
+  const cart = getCart(); const it = cart.find((x) => x.key === line.dataset.key); if (!it) return;
+  if (e.target.classList.contains('rm')) cart.splice(cart.indexOf(it), 1);
+  else if (e.target.dataset.d) it.qty = Math.min(20, Math.max(1, it.qty + Number(e.target.dataset.d)));
+  else return;
+  saveCart(cart); render();
+});
+
+function setupForm() {
+  const gov = view.querySelector('#gov');
+  GOVERNORATES.forEach((g) => gov.add(new Option(g, g)));
+  gov.addEventListener('change', updateSummary);
+  // remember details for returning customers (this browser only)
+  try { const saved = JSON.parse(localStorage.getItem('setpoint-customer') || '{}'); for (const k of ['name', 'phone', 'gov', 'address']) if (saved[k]) view.querySelector('#' + k).value = saved[k]; } catch {}
+
+  view.querySelector('#f').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const $ = (id) => view.querySelector('#' + id);
+    const err = $('err'); err.textContent = '';
+    let ok = true;
+    for (const id of ['name', 'phone', 'gov', 'address']) {
+      const bad = !$(id).value.trim() || (id === 'phone' && $(id).value.replace(/\D/g, '').length < 8);
+      $(id).classList.toggle('invalid', bad); if (bad) ok = false;
+    }
+    if (!ok) { err.textContent = 'Merci de remplir tous les champs obligatoires.'; return; }
+
+    const payload = {
+      items: getCart().map(({ productId, qty, colors, font }) => ({ productId, qty, colors, font })),
+      customer: { name: $('name').value, phone: $('phone').value, governorate: $('gov').value, address: $('address').value, notes: $('notes').value },
+      keychainName: $('keychain').value,
+      website: $('website').value,
+    };
+    const btn = $('submit'); btn.disabled = true; btn.textContent = 'Envoi…';
+    try {
+      const res = await fetch('/api/orders', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Erreur réseau');
+      try { localStorage.setItem('setpoint-customer', JSON.stringify({ name: $('name').value, phone: $('phone').value, gov: $('gov').value, address: $('address').value })); } catch {}
+      saveCart([]);
+      showDone(data, payload);
+    } catch (ex) {
+      err.textContent = ex.message + '.';
+      btn.disabled = false; btn.textContent = 'Confirmer la commande';
+    }
+  });
+}
+
+function showDone(data, payload) {
+  const msg = `Bonjour SETPOINT ! Je viens de passer la commande ${data.ref} (${data.total} DT) au nom de ${payload.customer.name}.`;
+  view.innerHTML = `<div class="done card">
+    <div style="font-size:3rem">🎾</div>
+    <h1 style="font-size:2rem">Merci pour votre commande !</h1>
+    <p>Votre numéro de commande :</p>
+    <div class="ref">${esc(data.ref)}</div>
+    <p>Nous vous appelons très vite au <strong>${esc(payload.customer.phone)}</strong> pour confirmer avant de lancer l’impression de votre compteur.</p>
+    <p><a class="btn p" target="_blank" rel="noopener" href="https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}">Nous écrire sur WhatsApp</a> <a class="btn s" href="/">Retour à la boutique</a></p>
+  </div>`;
+  window.scrollTo(0, 0);
+}
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+node_modules/
+.env
+.netlify/
+.data/
+*.local.txt
+atlas-credentials*.env
