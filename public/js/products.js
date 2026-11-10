@@ -33,12 +33,9 @@ export const COLORS = [
 // Fonts offered for the raised writing. `family` must match the Google Fonts link in /css/fonts.css.
 // Set `available: false` to hide one (e.g. if it prints badly).
 export const FONTS = [
-  { id: 'comic',   name: 'Classique', family: 'Comic Neue',       weight: 700 },
-  { id: 'round',   name: 'Arrondie',  family: 'Nunito',           weight: 800 },
-  { id: 'sport',   name: 'Sport',     family: 'Oswald',           weight: 600 },
-  { id: 'digital', name: 'Digitale',  family: 'Orbitron',         weight: 700 },
-  { id: 'slab',    name: 'Élégante',  family: 'Roboto Slab',      weight: 700 },
-  { id: 'marker',  name: 'Marqueur',  family: 'Permanent Marker', weight: 400 },
+  { id: 'comic',   name: 'Classique', family: 'Comic Neue', weight: 700 },
+  { id: 'sport',   name: 'Sport',     family: 'Oswald',     weight: 600 },
+  { id: 'digital', name: 'Digitale',  family: 'Orbitron',   weight: 700 },
 ].map((f) => ({ available: true, ...f }));
 
 export const PRODUCTS = [
@@ -61,9 +58,9 @@ export const PRODUCTS = [
     presets: [
       { name: 'Classique', font: 'comic',   colors: { body: 'black', writing: 'grey',  pinsLeft: 'black', pinsRight: 'red' } },
       { name: 'Neige',     font: 'digital', colors: { body: 'white',  writing: 'black',  pinsLeft: 'grey',   pinsRight: 'orange' } },
-      { name: 'Soleil',    font: 'marker',  colors: { body: 'yellow', writing: 'black',  pinsLeft: 'black',  pinsRight: 'red' } },
-      { name: 'Sable',     font: 'slab',    colors: { body: 'beige',  writing: 'bronze', pinsLeft: 'bronze', pinsRight: 'red' } },
-      { name: 'Corail',    font: 'round',   colors: { body: 'salmon', writing: 'black',  pinsLeft: 'white',  pinsRight: 'red' } },
+      { name: 'Soleil',    font: 'sport',   colors: { body: 'yellow', writing: 'black',  pinsLeft: 'black',  pinsRight: 'red' } },
+      { name: 'Sable',     font: 'comic',   colors: { body: 'beige',  writing: 'bronze', pinsLeft: 'bronze', pinsRight: 'red' } },
+      { name: 'Corail',    font: 'sport',   colors: { body: 'salmon', writing: 'black',  pinsLeft: 'white',  pinsRight: 'red' } },
       { name: 'Bronze',    font: 'sport',   colors: { body: 'bronze', writing: 'beige',  pinsLeft: 'black',  pinsRight: 'orange' } },
     ],
   },

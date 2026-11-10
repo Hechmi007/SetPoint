@@ -22,7 +22,6 @@
 .step-title{display:flex;align-items:baseline;gap:10px;margin:0 0 14px;font-size:1.05rem}
 .step-title b{background:var(--g2);color:#fff;border-radius:99px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;flex:none}
 .parts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-@media(max-width:480px){.parts{grid-template-columns:repeat(2,1fr)}}
 .part-btn{border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:14px;padding:10px 8px;cursor:pointer;font:inherit;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;transition:border-color .15s}
 .part-btn[aria-pressed="true"]{border-color:var(--g2);background:var(--card);box-shadow:0 0 0 3px var(--ring)}
 .part-btn .dot{width:26px;height:26px;border-radius:50%;border:1px solid rgba(0,0,0,.2)}
@@ -46,7 +45,6 @@
 .preset:hover{border-color:var(--g2)}
 .preset .mini{display:flex}.preset .mini i{width:14px;height:14px;border-radius:50%;margin-right:-4px;border:1.5px solid var(--card)}
 .fonts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-@media(max-width:480px){.fonts{grid-template-columns:repeat(2,1fr)}}
 .font-btn{border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:14px;padding:10px 6px 8px;cursor:pointer;text-align:center;display:flex;flex-direction:column;gap:2px}
 .font-btn[aria-checked="true"]{border-color:var(--g2);background:var(--card);box-shadow:0 0 0 3px var(--ring)}
 .font-btn .smp{font-size:1.35rem;line-height:1.2;white-space:nowrap}
@@ -57,6 +55,31 @@
 .qty input{width:44px;border:0;text-align:center;padding:0;font-weight:700;background:transparent;box-shadow:none}
 .buy .total{font-weight:900;font-size:1.6rem;color:var(--g2);margin-left:auto}
 .buy .btn{flex:1 1 200px;text-align:center}
+/* ---------- phones & tablets: the counter stays visible while choosing ---------- */
+.mbar{display:none}
+@media(max-width:879px){
+  main.w{padding-top:12px!important;padding-bottom:110px!important}
+  .studio{gap:14px}
+  .stage{position:sticky;top:59px;z-index:10;height:148px;min-height:0;padding:0;border-radius:20px;overflow:hidden}
+  .stage .preview{position:absolute;left:50%;top:44%;height:var(--len);width:calc(var(--len) * 168 / 524);
+    --len:min(calc(100vw - 72px),560px);transform:translate(-50%,-50%) rotate(-90deg)}
+  .stage svg{filter:drop-shadow(0 8px 10px rgba(0,0,0,.4))}
+  .stage-hint{bottom:6px;font-size:.72rem}
+  .panel .tag,.panel h1,.panel #ptag{display:none}
+  .step{padding:16px;margin-top:12px;scroll-margin-top:222px}
+  .step-title{margin-bottom:10px;font-size:.98rem}
+  .parts{gap:6px}
+  .part-btn{padding:8px 3px;gap:4px;border-radius:12px}
+  .part-btn .dot{width:22px;height:22px}
+  .part-btn .lbl{font-size:.74rem;line-height:1.15}
+  .part-btn .cn{font-size:.66rem}
+  .palette{grid-template-columns:repeat(auto-fill,minmax(38px,1fr));gap:9px;margin-top:10px}
+  .font-btn .smp{font-size:1.05rem}
+  .mbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:30;gap:12px;align-items:center;background:var(--card);
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 -6px 20px rgba(0,0,0,.1);border-top:3px solid var(--tn)}
+  .mbar .t{font-weight:900;font-size:1.3rem;color:var(--tn);white-space:nowrap}
+  .mbar .btn{flex:1;padding:12px 16px;text-align:center}
+}
 .share{background:none;border:0;color:var(--mut);text-decoration:underline;cursor:pointer;font:inherit;font-size:.85rem;padding:0}
 </style>
 </head>
@@ -79,11 +102,11 @@
       <p class="note" id="ptag" style="margin:0"></p>
 
       <div class="step">
-        <h2 class="step-title"><b>1</b> Choisissez une pièce</h2>
+        <h2 class="step-title"><b>1</b> Choisissez une pièce, puis sa couleur</h2>
         <div class="parts" id="parts" role="group" aria-label="Pièces"></div>
       </div>
 
-      <div class="step">
+      <div class="step" id="colorStep">
         <h2 class="step-title"><b>2</b> <span>Couleur — <span id="partName">Corps</span></span></h2>
         <div class="note" id="partHint"></div>
         <div class="palette" id="palette" role="radiogroup"></div>
@@ -118,6 +141,8 @@
   </div>
 </main>
 
+<div class="mbar" aria-label="Commande rapide"><span class="t" id="mtotal">25 DT</span><button class="btn p" id="madd" type="button">Ajouter au panier</button></div>
+
 <script type="module">
 import { getProduct, COLORS, getColor, FONTS, getFont } from '/js/products.js';
 import { renderPreview, paint, addToCart, money, esc, toast } from '/js/common.js';
@@ -145,10 +170,18 @@ const isLight = (hex) => { const n = parseInt(hex.slice(1), 16); return ((n >> 1
 
 const svg = await renderPreview(document.getElementById('preview'), product.id, colors, font);
 svg.querySelectorAll('[data-part]').forEach((g) => {
-  g.addEventListener('click', () => select(g.dataset.part));
+  g.addEventListener('click', () => select(g.dataset.part, true));
 });
 
-function select(partId) { active = partId; render(); }
+const isPhone = () => matchMedia('(max-width: 879px)').matches;
+function select(partId, reveal) {
+  active = partId; render();
+  if (reveal && isPhone()) {
+    const step = document.getElementById('colorStep');
+    const r = step.getBoundingClientRect();
+    if (r.top < 215 || r.top > innerHeight * 0.55) step.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
 
 function render() {
   paint(svg, colors, font, product);
@@ -180,7 +213,7 @@ function render() {
 }
 
 document.getElementById('parts').addEventListener('click', (e) => {
-  const b = e.target.closest('[data-part]'); if (b) select(b.dataset.part);
+  const b = e.target.closest('[data-part]'); if (b) select(b.dataset.part, true);
 });
 document.getElementById('palette').addEventListener('click', (e) => {
   const b = e.target.closest('[data-color]'); if (!b || b.disabled) return;
@@ -214,7 +247,7 @@ document.getElementById('share').addEventListener('click', async () => {
 
 const qty = document.getElementById('qty');
 const getQty = () => Math.min(20, Math.max(1, parseInt(qty.value) || 1));
-function updateTotal() { document.getElementById('total').textContent = money(product.price * getQty()); }
+function updateTotal() { const t = money(product.price * getQty()); document.getElementById('total').textContent = t; document.getElementById('mtotal').textContent = t; }
 qty.addEventListener('input', updateTotal);
 qty.addEventListener('blur', () => { qty.value = getQty(); updateTotal(); });
 document.getElementById('minus').onclick = () => { qty.value = Math.max(1, getQty() - 1); updateTotal(); };
@@ -222,6 +255,7 @@ document.getElementById('plus').onclick = () => { qty.value = Math.min(20, getQt
 
 const add = () => addToCart({ productId: product.id, qty: getQty(), colors: { ...colors }, font });
 document.getElementById('add').onclick = () => { add(); toast('Ajouté au panier ✓ — vous pouvez créer un autre modèle'); };
+document.getElementById('madd').onclick = () => document.getElementById('add').click();
 document.getElementById('buyNow').onclick = () => { add(); location.href = '/panier'; };
 
 render();

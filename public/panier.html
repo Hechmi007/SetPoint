@@ -82,7 +82,9 @@ function render() {
   // drop items saved with an older version of the catalog (removed product/part/color)
   const all = getCart();
   const cart = all.filter((it) => { const p = getProduct(it.productId); return p && p.parts.every((pt) => getColor(it.colors?.[pt.id])?.available); });
-  if (cart.length !== all.length) saveCart(cart);
+  let changed = cart.length !== all.length;
+  cart.forEach((it) => { const p = getProduct(it.productId); if (p.fontPart && !getFont(it.font)?.available) { it.font = p.defaultFont; changed = true; } });
+  if (changed) saveCart(cart);
   if (!cart.length) {
     view.innerHTML = `<div class="empty card"><h2>Votre panier est vide</h2><p class="note">Créez votre compteur de score aux couleurs qui vous ressemblent.</p><a class="btn p" href="/produit?id=compteur-score">Personnaliser mon compteur</a></div>`;
     return;
