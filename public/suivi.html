@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Suivre ma commande — SETPOINT</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/fonts.css">
+<style>
+.track{max-width:640px;margin:0 auto;padding:36px 20px 64px}
+.track h1{font-size:clamp(1.8rem,6vw,2.4rem)}
+.track form{display:grid;gap:14px}
+#err{color:var(--err);font-weight:600;margin:0}
+.res{margin-top:22px}
+.res-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.res-head .mono{font:800 1.15rem ui-monospace,Consolas,monospace}
+.pill{border-radius:99px;padding:5px 14px;font-weight:800;font-size:.9rem;background:var(--tn);color:#fff}
+.pill.cancelled{background:#777}
+.steps{list-style:none;padding:0;margin:22px 0 6px;display:grid;gap:0}
+.steps li{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start;position:relative;padding-bottom:18px}
+.steps li:not(:last-child)::before{content:"";position:absolute;left:16px;top:30px;bottom:0;width:3px;background:var(--line)}
+.steps li.done:not(:last-child)::before{background:var(--tn)}
+.steps .dot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1rem;background:var(--beige);border:3px solid var(--line);color:var(--mut);font-weight:900}
+.steps li.done .dot{background:var(--tn);border-color:var(--tn);color:#fff}
+.steps li.current .dot{box-shadow:0 0 0 5px var(--ring)}
+.steps b{display:block}
+.steps .when{font-size:.82rem;color:var(--mut)}
+.steps li:not(.done) b{color:var(--mut)}
+.items{margin:0;padding:0;list-style:none;border-top:1px solid var(--line)}
+.items li{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.95rem}
+.tot{display:flex;justify-content:space-between;font-weight:900;font-size:1.1rem;margin-top:10px}
+</style>
+</head>
+<body>
+<header class="nav">
+  <a class="logo" href="/"><img src="/img/logo-mark.svg" alt="" width="32" height="32">SETPOINT</a>
+  <nav><a href="/#boutique">Boutique</a><a href="/suivi" aria-current="page">Suivi</a><a class="cart-link" href="/panier">Panier <span class="cart-count" data-n="0">0</span></a></nav>
+</header>
+
+<main class="track">
+  <h1>Suivre ma commande</h1>
+  <p class="note" style="margin-top:-6px">Entrez la référence reçue après votre commande (ex. <span class="mono">SP-261110-4F2A</span>) et le numéro de téléphone utilisé.</p>
+  <form class="card" id="f" novalidate>
+    <div class="field"><label for="ref">Référence de commande</label><input id="ref" autocomplete="off" placeholder="SP-AAMMJJ-XXXX" style="text-transform:uppercase;font-family:ui-monospace,Consolas,monospace" required></div>
+    <div class="field"><label for="phone">Téléphone</label><input id="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="ex. 20 123 456" required></div>
+    <button class="btn p" id="go">Voir l’état de ma commande</button>
+    <p id="err" role="alert"></p>
+  </form>
+  <div id="res" class="res" aria-live="polite"></div>
+</main>
+
+<div class="tn-band" aria-hidden="true"></div>
+<footer>
+  <img src="/img/logo-white.svg" alt="SETPOINT — 100% tunisien" width="260" height="68" style="display:block;margin:0 auto 10px">
+  <p class="tn-line">Conçu et fabriqué en Tunisie <img class="flag" src="/img/flag-tn.svg" alt=""> <span class="ar" lang="ar">صُنع في تونس</span></p>
+</footer>
+
+<script type="module">
+import { money, esc, WHATSAPP } from '/js/common.js';
+
+const $ = (id) => document.getElementById(id);
+const STEPS = [
+  ['new', 'Commande reçue', 'Nous avons bien reçu votre commande.'],
+  ['confirmed', 'Confirmée', 'Nous vous avons appelé pour la confirmer.'],
+  ['production', 'En impression', 'Votre commande est en train d’être imprimée en 3D dans notre atelier.'],
+  ['ready', 'Prête', 'Tout est imprimé et emballé.'],
+  ['shipped', 'Expédiée', 'Votre colis est en route.'],
+  ['delivered', 'Livrée', 'Bon match ! 🎾'],
+];
+const fmt = (iso) => new Date(iso).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
+
+const params = new URLSearchParams(location.search);
+if (params.get('ref')) $('ref').value = params.get('ref');
+try { const saved = JSON.parse(localStorage.getItem('setpoint-customer') || '{}'); if (saved.phone) $('phone').value = saved.phone; } catch {}
+
+$('f').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  $('err').textContent = ''; $('res').innerHTML = '';
+  const ref = $('ref').value.trim().toUpperCase(), phone = $('phone').value.trim();
+  if (!ref || phone.replace(/\D/g, '').length < 8) { $('err').textContent = 'Merci d’indiquer la référence et votre numéro de téléphone.'; return; }
+  $('go').disabled = true; $('go').textContent = 'Recherche…';
+  try {
+    const res = await fetch('/api/track', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ref, phone }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Erreur réseau');
+    show(data.order);
+    history.replaceState(null, '', '?ref=' + encodeURIComponent(data.order.ref));
+  } catch (ex) { $('err').textContent = ex.message; }
+  finally { $('go').disabled = false; $('go').textContent = 'Voir l’état de ma commande'; }
+});
+
+function show(o) {
+  const when = Object.fromEntries((o.history || []).map((h) => [h.status, h.at]));
+  const idx = STEPS.findIndex(([id]) => id === o.status);
+  const cancelled = o.status === 'cancelled';
+  const msg = `Bonjour SETPOINT ! J’ai une question sur ma commande ${o.ref}.`;
+  $('res').innerHTML = `<div class="card">
+    <div class="res-head"><div><div class="mono">${esc(o.ref)}</div><div class="note">Passée le ${fmt(o.createdAt)}${o.firstName ? ` · ${esc(o.firstName)}` : ''}</div></div>
+      <span class="pill ${cancelled ? 'cancelled' : ''}">${esc(o.statusLabel)}</span></div>
+    ${cancelled ? '<p style="margin-top:18px">Cette commande a été annulée. Une question ? Écrivez-nous sur WhatsApp.</p>' : `
+    <ol class="steps">${STEPS.map(([id, label, text], i) => `<li class="${i <= idx ? 'done' : ''} ${i === idx ? 'current' : ''}">
+      <span class="dot">${i < idx ? '✓' : i + 1}</span>
+      <div><b>${label}</b>${i === idx ? `<div>${text}</div>` : ''}${when[id] ? `<div class="when">${fmt(when[id])}</div>` : ''}</div></li>`).join('')}</ol>`}
+    <h3 style="font-size:1rem;margin-top:10px">Votre commande</h3>
+    <ul class="items">${o.items.map((it) => `<li><span>${esc(it.name)}${it.variant ? ` — ${esc(it.variant)}` : ''}${it.personalization ? ` <span class="note">« ${esc(it.personalization)} »</span>` : ''}</span><b>× ${it.qty}</b></li>`).join('')}</ul>
+    <div class="tot"><span>Total${o.shipping?.price ? ` (livraison ${money(o.shipping.price)} incluse)` : ''}</span><span>${money(o.total)}</span></div>
+    <p style="margin:18px 0 0"><a class="btn s" target="_blank" rel="noopener" href="https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}">Une question ? WhatsApp</a></p>
+  </div>`;
+}
+if (params.get('ref') && $('phone').value) $('f').requestSubmit();
+</script>
+</body>
+</html>

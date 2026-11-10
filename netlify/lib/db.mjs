@@ -10,9 +10,13 @@ async function mongoCollection(name = 'orders') {
   if (!clientPromise) {
     const client = new MongoClient(process.env.MONGODB_URI, { maxPoolSize: 5 });
     clientPromise = client.connect().then(async (c) => {
-      const col = c.db(process.env.MONGODB_DB || 'setpoint').collection('orders');
+      const db = c.db(process.env.MONGODB_DB || 'setpoint');
+      const col = db.collection('orders');
       await col.createIndex({ ref: 1 }, { unique: true });
       await col.createIndex({ createdAt: -1 });
+      await db.collection('products').createIndex({ id: 1 }, { unique: true });
+      await db.collection('products').createIndex({ ref: 1 }, { unique: true });
+      await db.collection('images').createIndex({ id: 1 }, { unique: true });
       return c;
     }).catch((err) => { clientPromise = undefined; throw err; });
   }
@@ -111,6 +115,57 @@ export async function clearFailedLogins(ip) {
   if (useMongo()) await (await attemptsCollection()).deleteMany({ ip });
   else for (let i = memAttempts.length - 1; i >= 0; i--) if (memAttempts[i].ip === ip) memAttempts.splice(i, 1);
 }
+
+// ---------- generic collections (products, images, single-order lookups) ----------
+// Same API on MongoDB and on the local dev file store (.data/<name>.json). Queries are simple
+// equality matches on top-level fields, e.g. { id: 'porte-cle' }.
+const fileFor = (name) => path.join(process.cwd(), '.data', `${name}.json`);
+async function readRows(name) {
+  try { return JSON.parse(await fs.readFile(fileFor(name), 'utf8')); } catch { return []; }
+}
+async function writeRows(name, rows) {
+  await fs.mkdir(path.dirname(fileFor(name)), { recursive: true });
+  await fs.writeFile(fileFor(name), JSON.stringify(rows, null, 2));
+}
+const matches = (doc, q) => Object.entries(q).every(([k, v]) => doc[k] === v);
+
+export const store = {
+  async find(name, query = {}, { sortBy = 'createdAt', desc = true, fields } = {}) {
+    if (useMongo()) {
+      const rows = await (await mongoCollection(name)).find(query, fields ? { projection: fields } : {})
+        .sort({ [sortBy]: desc ? -1 : 1 }).limit(1000).toArray();
+      return rows.map(strip);
+    }
+    const rows = (await readRows(name)).filter((r) => matches(r, query));
+    rows.sort((a, b) => String(a[sortBy] ?? '').localeCompare(String(b[sortBy] ?? '')) * (desc ? -1 : 1));
+    return rows;
+  },
+  async get(name, query) {
+    if (useMongo()) { const r = await (await mongoCollection(name)).findOne(query); return r ? strip(r) : null; }
+    return (await readRows(name)).find((r) => matches(r, query)) || null;
+  },
+  async insert(name, doc) {
+    if (useMongo()) { await (await mongoCollection(name)).insertOne({ ...doc }); return doc; }
+    const rows = await readRows(name); rows.push(doc); await writeRows(name, rows); return doc;
+  },
+  async update(name, query, patch) {
+    if (useMongo()) {
+      const r = await (await mongoCollection(name)).findOneAndUpdate(query, { $set: patch }, { returnDocument: 'after' });
+      return r ? strip(r) : null;
+    }
+    const rows = await readRows(name); const row = rows.find((r) => matches(r, query));
+    if (!row) return null;
+    Object.assign(row, patch); await writeRows(name, rows); return row;
+  },
+  async remove(name, query) {
+    if (useMongo()) return (await (await mongoCollection(name)).deleteOne(query)).deletedCount === 1;
+    const rows = await readRows(name); const i = rows.findIndex((r) => matches(r, query));
+    if (i < 0) return false;
+    rows.splice(i, 1); await writeRows(name, rows); return true;
+  },
+};
+
+export const getOrder = (ref) => store.get('orders', { ref });
 
 export async function updateOrder(ref, patch) {
   if (useMongo()) {

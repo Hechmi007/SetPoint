@@ -14,7 +14,9 @@ export function saveCart(items) {
 }
 export function addToCart(item) {
   const cart = getCart();
-  const same = cart.find((it) => it.productId === item.productId && it.font === item.font && JSON.stringify(it.colors) === JSON.stringify(item.colors));
+  const same = cart.find((it) => it.productId === item.productId && (it.font || null) === (item.font || null)
+    && JSON.stringify(it.colors || null) === JSON.stringify(item.colors || null)
+    && (it.variantId || null) === (item.variantId || null) && (it.personalization || '') === (item.personalization || ''));
   if (same) same.qty = Math.min(20, same.qty + item.qty);
   else cart.push({ ...item, key: Math.random().toString(36).slice(2, 10) });
   saveCart(cart);
@@ -71,6 +73,9 @@ function fitText(group) {
 
 // ---------- misc ----------
 export const money = (n) => `${n} DT`;
+/** Plain text (as typed in the admin) → escaped paragraphs with line breaks. */
+export const paragraphs = (s) => String(s ?? '').split(/\n{2,}/).map((p) => p.trim()).filter(Boolean)
+  .map((p) => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('');
 export function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }

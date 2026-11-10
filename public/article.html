@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SETPOINT</title>
+<link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/fonts.css">
+<style>
+.draft-banner{background:#fff3dc;color:#7a4b00;text-align:center;padding:8px 16px;font-weight:700;font-size:.9rem}
+.loading{padding:80px 20px;text-align:center;color:var(--mut)}
+/* ----- shared pieces ----- */
+.gal-main{border-radius:24px;background:var(--beige);aspect-ratio:1;overflow:hidden;box-shadow:var(--sh)}
+.gal-main img{width:100%;height:100%;object-fit:cover;display:block}
+.gal-thumbs{display:flex;gap:10px;margin-top:12px;overflow-x:auto;padding-bottom:4px}
+.gal-thumbs button{flex:none;width:68px;height:68px;border-radius:14px;overflow:hidden;border:2px solid transparent;padding:0;cursor:pointer;background:var(--beige)}
+.gal-thumbs button[aria-current="true"]{border-color:var(--tn)}
+.gal-thumbs img{width:100%;height:100%;object-fit:cover;display:block}
+.buybox{padding:26px}
+.buybox h1{font-size:clamp(1.8rem,5vw,2.5rem);margin:8px 0 6px}
+.meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.meta .ref{font:600 .78rem ui-monospace,Consolas,monospace;color:var(--mut)}
+.buybox .price{margin:10px 0 4px}
+.vlabel{font-weight:700;font-size:.9rem;margin:16px 0 8px}
+.variants{display:flex;flex-wrap:wrap;gap:8px}
+.vchip{display:inline-flex;align-items:center;gap:8px;border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:14px;padding:6px 12px 6px 6px;cursor:pointer;font:inherit;font-weight:600;font-size:.9rem}
+.vchip.txt{padding:8px 14px}
+.vchip img{width:36px;height:36px;border-radius:9px;object-fit:cover}
+.vchip[aria-checked="true"]{border-color:var(--tn);background:var(--card);box-shadow:0 0 0 3px var(--ring)}
+.vchip:disabled{opacity:.5;cursor:not-allowed;text-decoration:line-through}
+.vchip .vp{color:var(--mut);font-weight:500;font-size:.8rem}
+.perso{margin-top:16px}
+.buy-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:18px}
+.qty{display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:99px;overflow:hidden;background:var(--card)}
+.qty button{border:0;background:transparent;color:var(--ink);width:42px;height:46px;font-size:1.3rem;cursor:pointer}
+.qty input{width:44px;border:0;text-align:center;padding:0;font-weight:700;background:transparent;box-shadow:none}
+.buy-row .btn{flex:1 1 180px;text-align:center}
+.perks{margin:14px 0 0;font-size:.85rem;color:var(--mut)}
+.desc{font-size:1.05rem;max-width:760px}
+.sec{margin-top:44px;padding:0}
+.sec h2{font-size:clamp(1.4rem,4vw,2rem)}
+.sec-text p{max-width:760px}
+.feat{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.feat .card{padding:22px;border-top:4px solid var(--tn)}
+.feat .ic{font-size:1.6rem;line-height:1}
+.feat h3{font-size:1.05rem;margin:10px 0 6px}
+.feat p{margin:0;color:var(--mut);font-size:.93rem}
+figure{margin:0}
+.sec-image img{width:100%;max-height:min(70vh,560px);object-fit:cover;border-radius:24px;display:block;box-shadow:var(--sh)}
+.sec-image:not(.wide) img{max-width:760px}
+.sec-image figcaption{color:var(--mut);font-size:.88rem;margin-top:8px}
+.specs{width:100%;max-width:760px;border-collapse:collapse;background:var(--card);border-radius:18px;overflow:hidden;box-shadow:var(--sh)}
+.specs th,.specs td{text-align:left;padding:12px 18px;border-bottom:1px solid var(--line);font-size:.95rem}
+.specs th{width:38%;color:var(--mut);font-weight:600}
+.specs tr:last-child th,.specs tr:last-child td{border-bottom:0}
+/* ----- layout: classique ----- */
+.lay-classic .top{display:grid;gap:28px;align-items:start;padding-top:28px}
+@media(min-width:880px){.lay-classic .top{grid-template-columns:1.05fr 1fr}.lay-classic .buybox{position:sticky;top:90px}}
+/* ----- layout: galerie ----- */
+.hgal{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding:20px max(16px,calc((100vw - 1040px)/2));scrollbar-width:thin}
+.hgal img{flex:none;height:min(62vh,560px);max-width:86vw;aspect-ratio:4/5;object-fit:cover;border-radius:24px;scroll-snap-align:center;box-shadow:var(--sh)}
+.lay-gallery .narrow{max-width:820px}
+.lay-gallery .buybox{margin-top:8px;text-align:center}
+.lay-gallery .meta,.lay-gallery .variants,.lay-gallery .buy-row{justify-content:center}
+.lay-gallery .perso{max-width:360px;margin-left:auto;margin-right:auto;text-align:left}
+/* ----- layout: story ----- */
+.story-hero{position:relative;min-height:min(78vh,640px);display:flex;align-items:flex-end;background:var(--beige) center/cover no-repeat;color:#fff}
+.story-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 30%,rgba(0,0,0,.65) 100%)}
+.story-hero .ov{position:relative;z-index:1;padding:40px 20px;max-width:1080px;margin:0 auto;width:100%}
+.story-hero h1{font-size:clamp(2.2rem,8vw,4rem);margin:10px 0 8px;color:#fff}
+.story-hero p{font-size:1.1rem;max-width:620px;margin:0 0 18px}
+.story-hero .tag{background:rgba(255,255,255,.9);color:var(--ink)}
+.lay-story .sec-image.wide img{border-radius:0;box-shadow:none}
+.lay-story .sec-image.wide{margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)}
+.lay-story .sec-image.wide figcaption{max-width:1040px;margin:8px auto 0;padding:0 20px}
+.lay-story .buywrap{display:grid;gap:28px;align-items:start;margin-top:56px}
+@media(min-width:880px){.lay-story .buywrap{grid-template-columns:1fr 1fr}}
+/* ----- phones: fixed add-to-cart bar ----- */
+.mbar{display:none}
+@media(max-width:879px){
+  body{padding-bottom:84px}
+  .mbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:30;gap:12px;align-items:center;background:var(--card);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 -6px 20px rgba(0,0,0,.1);border-top:3px solid var(--tn)}
+  .mbar .t{font-weight:900;font-size:1.3rem;color:var(--tn);white-space:nowrap}
+  .mbar .btn{flex:1;padding:12px 16px;text-align:center}
+}
+</style>
+</head>
+<body>
+<header class="nav">
+  <a class="logo" href="/"><img src="/img/logo-mark.svg" alt="" width="32" height="32">SETPOINT</a>
+  <nav><a href="/#boutique">Boutique</a><a href="/suivi">Suivi</a><a class="cart-link" href="/panier">Panier <span class="cart-count" data-n="0">0</span></a></nav>
+</header>
+<div id="banner"></div>
+<main id="page"><div class="loading">Chargement…</div></main>
+<div class="mbar" id="mbar" hidden><span class="t" id="mprice"></span><button class="btn p" id="madd" type="button">Ajouter au panier</button></div>
+
+<div class="tn-band" aria-hidden="true"></div>
+<footer>
+  <img src="/img/logo-white.svg" alt="SETPOINT — 100% tunisien" width="260" height="68" style="display:block;margin:0 auto 10px">
+  <p class="tn-line">Conçu et fabriqué en Tunisie <img class="flag" src="/img/flag-tn.svg" alt=""> <span class="ar" lang="ar">صُنع في تونس</span></p>
+</footer>
+
+<script type="module">
+import { addToCart, money, esc, paragraphs, toast } from '/js/common.js';
+
+const page = document.getElementById('page');
+const id = new URLSearchParams(location.search).get('id') || '';
+let token = ''; try { token = sessionStorage.getItem('sp-admin') || ''; } catch {}
+
+const res = await fetch('/api/products?id=' + encodeURIComponent(id), { headers: token ? { authorization: `Bearer ${token}` } : {} }).catch(() => null);
+const data = res && await res.json().catch(() => null);
+const p = data?.product;
+if (!p) {
+  page.innerHTML = `<div class="w loading"><h1>Produit introuvable</h1><p>Ce produit n’existe pas ou n’est plus disponible.</p><a class="btn p" href="/#boutique">Voir la boutique</a></div>`;
+  throw new Error('not found');
+}
+
+document.title = `${p.name} — SETPOINT`;
+if (p.status !== 'published') document.getElementById('banner').innerHTML = '<div class="draft-banner">Aperçu — ce produit est en brouillon et n’est pas visible par les clients.</div>';
+
+let variant = p.variants.find((v) => v.available) || null;
+let image = variant?.image || p.images[0] || '';
+const price = () => variant?.price ?? p.price;
+
+// ---------- building blocks ----------
+const gallery = () => !p.images.length ? '' : `
+  <div class="gal-main"><img id="mainImg" src="${esc(image)}" alt="${esc(p.name)}"></div>
+  ${p.images.length > 1 ? `<div class="gal-thumbs" id="thumbs">${p.images.map((u) => `<button type="button" data-img="${esc(u)}" aria-current="${u === image}" aria-label="Voir la photo"><img src="${esc(u)}" alt="" loading="lazy"></button>`).join('')}</div>` : ''}`;
+
+const buybox = () => `
+  <div class="buybox card" id="acheter">
+    <div class="meta">${p.category ? `<span class="tag">${esc(p.category)}</span>` : ''}<span class="tag made-in" style="background:#FFE4E6;color:#B5000F"><img class="flag" src="/img/flag-tn.svg" alt=""> Fabriqué en Tunisie</span><span class="ref">Réf. <span id="ref">${esc(variant?.ref || p.ref)}</span></span></div>
+    <h1>${esc(p.name)}</h1>
+    ${p.tagline ? `<p class="note" style="margin:0">${esc(p.tagline)}</p>` : ''}
+    <div class="price" id="price">${money(price())}</div>
+    ${p.variants.length ? `<div class="vlabel">${esc(p.variantLabel)} : <span id="vname">${esc(variant?.name || '—')}</span></div>
+      <div class="variants" id="variants" role="radiogroup" aria-label="${esc(p.variantLabel)}">${p.variants.map((v) => `
+        <button type="button" class="vchip ${v.image ? '' : 'txt'}" role="radio" data-v="${esc(v.id)}" aria-checked="${v === variant}" ${v.available ? '' : 'disabled title="Bientôt disponible"'}>
+          ${v.image ? `<img src="${esc(v.image)}" alt="" loading="lazy">` : ''}${esc(v.name)}${v.price !== null && v.price !== p.price ? ` <span class="vp">${money(v.price)}</span>` : ''}</button>`).join('')}</div>` : ''}
+    ${p.personalization?.enabled ? `<div class="field perso"><label for="perso">${esc(p.personalization.label)}${p.personalization.required ? '' : ' (facultatif)'}</label>
+      <input id="perso" maxlength="${p.personalization.maxLength}" placeholder="Ex. Amine"></div>` : ''}
+    <div class="buy-row">
+      <div class="qty"><button type="button" id="minus" aria-label="Moins">−</button><input id="qty" type="number" min="1" max="20" value="1" inputmode="numeric" aria-label="Quantité"><button type="button" id="plus" aria-label="Plus">+</button></div>
+      <button class="btn p" id="add" type="button">Ajouter au panier</button>
+    </div>
+    <button class="btn s" id="buyNow" type="button" style="width:100%;margin-top:10px">Commander maintenant</button>
+    <p class="perks">🚚 Livraison dans les 24 gouvernorats · 🎁 Porte-clé prénom offert avec chaque commande</p>
+  </div>`;
+
+const sections = () => (p.description ? `<div class="sec desc">${paragraphs(p.description)}</div>` : '') + p.sections.map((s) => {
+  if (s.type === 'text') return `<section class="sec sec-text">${s.title ? `<h2>${esc(s.title)}</h2>` : ''}${paragraphs(s.body)}</section>`;
+  if (s.type === 'features') return `<section class="sec">${s.title ? `<h2>${esc(s.title)}</h2>` : ''}<div class="feat">${s.items.map((it) => `
+    <div class="card">${it.icon ? `<div class="ic">${esc(it.icon)}</div>` : ''}<h3>${esc(it.title)}</h3><p>${esc(it.text)}</p></div>`).join('')}</div></section>`;
+  if (s.type === 'image') return s.url ? `<figure class="sec sec-image ${s.wide ? 'wide' : ''}"><img src="${esc(s.url)}" alt="${esc(s.caption || p.name)}" loading="lazy">${s.caption ? `<figcaption>${esc(s.caption)}</figcaption>` : ''}</figure>` : '';
+  if (s.type === 'specs') return `<section class="sec">${s.title ? `<h2>${esc(s.title)}</h2>` : ''}<table class="specs">${s.rows.map((r) => `<tr><th>${esc(r.label)}</th><td>${esc(r.value)}</td></tr>`).join('')}</table></section>`;
+  return '';
+}).join('');
+
+// ---------- layouts ----------
+if (p.layout === 'gallery') {
+  page.innerHTML = `<div class="lay-gallery">
+    ${p.images.length ? `<div class="hgal">${p.images.map((u) => `<img src="${esc(u)}" alt="${esc(p.name)}">`).join('')}</div>` : ''}
+    <div class="w narrow">${buybox()}${sections()}</div></div>`;
+} else if (p.layout === 'story') {
+  page.innerHTML = `<div class="lay-story">
+    <header class="story-hero" style="${image ? `background-image:url('${esc(p.images[0])}')` : ''}"><div class="ov">
+      ${p.category ? `<span class="tag">${esc(p.category)}</span>` : ''}<h1>${esc(p.name)}</h1>${p.tagline ? `<p>${esc(p.tagline)}</p>` : ''}
+      <a class="btn p" href="#acheter">Commander · ${money(p.variants.length ? Math.min(p.price, ...p.variants.filter((v) => v.available).map((v) => v.price ?? p.price)) : p.price)}</a></div></header>
+    <div class="w">${sections()}<div class="buywrap"><div>${gallery()}</div>${buybox()}</div></div></div>`;
+} else {
+  page.innerHTML = `<div class="lay-classic"><div class="w"><div class="top"><div>${gallery()}</div>${buybox()}</div>${sections()}</div></div>`;
+}
+page.insertAdjacentHTML('beforeend', '<div style="height:64px"></div>');
+document.getElementById('mbar').hidden = false;
+
+// ---------- interactions ----------
+const $ = (x) => document.getElementById(x);
+function setImage(u) {
+  if (!u) return; image = u;
+  if ($('mainImg')) $('mainImg').src = u;
+  document.querySelectorAll('#thumbs [data-img]').forEach((b) => b.setAttribute('aria-current', b.dataset.img === u));
+}
+function refresh() {
+  $('price').textContent = money(price());
+  $('mprice').textContent = money(price() * getQty());
+  $('ref').textContent = variant?.ref || p.ref;
+  if ($('vname')) $('vname').textContent = variant?.name || '—';
+  document.querySelectorAll('[data-v]').forEach((b) => b.setAttribute('aria-checked', b.dataset.v === variant?.id));
+}
+$('thumbs')?.addEventListener('click', (e) => { const b = e.target.closest('[data-img]'); if (b) setImage(b.dataset.img); });
+$('variants')?.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-v]'); if (!b || b.disabled) return;
+  variant = p.variants.find((v) => v.id === b.dataset.v); setImage(variant.image); refresh();
+});
+const qty = $('qty');
+const getQty = () => Math.min(20, Math.max(1, parseInt(qty.value) || 1));
+qty.addEventListener('input', refresh);
+qty.addEventListener('blur', () => { qty.value = getQty(); refresh(); });
+$('minus').onclick = () => { qty.value = Math.max(1, getQty() - 1); refresh(); };
+$('plus').onclick = () => { qty.value = Math.min(20, getQty() + 1); refresh(); };
+
+function add() {
+  if (p.variants.length && !variant) { toast(`Choisissez un(e) ${p.variantLabel.toLowerCase()}`); return false; }
+  const perso = $('perso')?.value.trim() || '';
+  if (p.personalization?.enabled && p.personalization.required && !perso) {
+    $('perso').classList.add('invalid'); $('perso').focus(); toast(`${p.personalization.label} : à remplir`); return false;
+  }
+  addToCart({ kind: 'catalog', productId: p.id, variantId: variant?.id || null, personalization: perso, qty: getQty(),
+    name: p.name, variantName: variant?.name || null, price: price(), image: variant?.image || p.images[0] || '' });
+  return true;
+}
+$('add').onclick = () => { if (add()) toast('Ajouté au panier ✓'); };
+$('madd').onclick = () => $('add').click();
+$('buyNow').onclick = () => { if (add()) location.href = '/panier'; };
+$('perso')?.addEventListener('input', (e) => e.target.classList.remove('invalid'));
+refresh();
+</script>
+</body>
+</html>

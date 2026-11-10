@@ -12,7 +12,7 @@
 <body>
 <header class="nav">
   <a class="logo" href="/"><img src="/img/logo-mark.svg" alt="" width="32" height="32">SETPOINT</a>
-  <nav><a href="/#boutique">Boutique</a><a class="cart-link" href="/panier">Panier <span class="cart-count" data-n="0">0</span></a></nav>
+  <nav><a href="/#boutique">Boutique</a><a href="/suivi">Suivi</a><a class="cart-link" href="/panier">Panier <span class="cart-count" data-n="0">0</span></a></nav>
 </header>
 
 <main>
@@ -98,16 +98,23 @@
 <script type="module">
 import { PRODUCTS } from '/js/products.js';
 import { esc, money, revealOnScroll } from '/js/common.js';
-document.getElementById('products').innerHTML = PRODUCTS.map((p) => `
-  <a class="product-card" href="/produit?id=${esc(p.id)}">
-    <div class="ph r43"><img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy"></div>
+const card = (p, href, tag, cta, priceLabel) => `
+  <a class="product-card" href="${href}">
+    <div class="ph r43">${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy">` : ''}</div>
     <div class="body">
-      <span class="tag">Personnalisable</span>
+      <span class="tag">${esc(tag)}</span>
       <h3 style="margin:10px 0 4px">${esc(p.name)}</h3>
-      <div class="note">${esc(p.tagline)}</div>
-      <div class="row"><span class="amt">${money(p.price)}</span><span class="btn p sm">Personnaliser</span></div>
+      <div class="note">${esc(p.tagline || '')}</div>
+      <div class="row"><span class="amt">${priceLabel}</span><span class="btn p sm">${cta}</span></div>
     </div>
-  </a>`).join('');
+  </a>`;
+const grid = document.getElementById('products');
+const builtIn = PRODUCTS.map((p) => card(p, `/produit?id=${encodeURIComponent(p.id)}`, 'Personnalisable', 'Personnaliser', money(p.price))).join('');
+grid.innerHTML = builtIn;
+fetch('/api/products').then((r) => r.ok ? r.json() : { products: [] }).then(({ products }) => {
+  grid.innerHTML = builtIn + products.map((p) => card(p, `/article?id=${encodeURIComponent(p.id)}`, p.category || 'Nouveau', 'Voir',
+    (p.minPrice < p.price ? 'dès ' : '') + money(p.minPrice))).join('');
+}).catch(() => {});
 revealOnScroll();
 </script>
 </body>

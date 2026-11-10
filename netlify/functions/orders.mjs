@@ -2,6 +2,7 @@
 import crypto from 'node:crypto';
 import { getProduct, getColor, getFont, GOVERNORATES, SHIPPING } from '../../public/js/products.js';
 import { insertOrder, classifyDbError } from '../lib/db.mjs';
+import { getCatalogProduct, unitPrice } from '../lib/catalog.mjs';
 import { json, error, readJson } from '../lib/http.mjs';
 
 const clean = (v, max) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
@@ -41,10 +42,34 @@ export default async (req) => {
 
   const items = [];
   for (const raw of body.items) {
-    const product = getProduct(raw?.productId);
-    if (!product) return error('Produit inconnu');
-    const qty = Math.trunc(Number(raw.qty));
+    const qty = Math.trunc(Number(raw?.qty));
     if (!(qty >= 1 && qty <= 20)) return error('Quantité invalide');
+    const product = getProduct(raw?.productId);
+
+    if (!product) {
+      // catalog product created in the admin (keychains, ...)
+      let cat;
+      try { cat = await getCatalogProduct(String(raw?.productId ?? '').slice(0, 60)); }
+      catch (e) { console.error('catalog lookup', e); return json({ error: `Impossible de vérifier le panier (code : ${classifyDbError(e)}).`, code: classifyDbError(e) }, 500); }
+      if (!cat) return error('Un produit de votre panier n’est plus disponible');
+      let variant = null;
+      if (cat.variants.length) {
+        variant = cat.variants.find((v) => v.id === raw.variantId);
+        if (!variant || !variant.available) return error(`Choisissez un(e) ${cat.variantLabel.toLowerCase()} disponible pour « ${cat.name} »`);
+      }
+      let personalization = '';
+      if (cat.personalization?.enabled) {
+        personalization = clean(raw.personalization, cat.personalization.maxLength);
+        if (cat.personalization.required && !personalization) return error(`${cat.personalization.label} manquant pour « ${cat.name} »`);
+      }
+      items.push({
+        kind: 'catalog', productId: cat.id, productRef: cat.ref, name: cat.name,
+        variantId: variant?.id ?? null, variantName: variant?.name ?? null, variantRef: variant?.ref ?? null,
+        personalization, image: variant?.image || cat.images[0] || '', unitPrice: unitPrice(cat, variant), qty,
+      });
+      continue;
+    }
+
     const colors = {};
     for (const part of product.parts) {
       const color = getColor(raw.colors?.[part.id]);
@@ -57,7 +82,7 @@ export default async (req) => {
       if (!f || !f.available) return error('Police invalide');
       font = { id: f.id, name: f.name, family: f.family };
     }
-    items.push({ productId: product.id, name: product.name, unitPrice: product.price, qty, colors, font });
+    items.push({ kind: 'custom', productId: product.id, productRef: product.ref, name: product.name, unitPrice: product.price, qty, colors, font });
   }
 
   const subtotal = items.reduce((s, it) => s + it.unitPrice * it.qty, 0);

@@ -41,6 +41,7 @@ export const FONTS = [
 export const PRODUCTS = [
   {
     id: 'compteur-score',
+    ref: 'SP-CS-001',
     name: 'Compteur de score',
     tagline: 'Se fixe sur votre raquette de padel ou de tennis.',
     price: 25, // DT
@@ -79,6 +80,7 @@ export const ORDER_STATUSES = [
   { id: 'new',        label: 'Nouvelle' },
   { id: 'confirmed',  label: 'Confirmée' },
   { id: 'production', label: 'En production' },
+  { id: 'ready',      label: 'Prête' },
   { id: 'shipped',    label: 'Expédiée' },
   { id: 'delivered',  label: 'Livrée' },
   { id: 'cancelled',  label: 'Annulée' },

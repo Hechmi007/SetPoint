@@ -1,7 +1,7 @@
 // GET   /api/admin/orders?status=&q=   — list orders
 // PATCH /api/admin/orders  {ref, status?, adminNote?}  — update an order
 import { ORDER_STATUSES } from '../../public/js/products.js';
-import { listOrders, updateOrder } from '../lib/db.mjs';
+import { listOrders, updateOrder, getOrder } from '../lib/db.mjs';
 import { json, error, readJson, isAuthorized } from '../lib/http.mjs';
 
 export default async (req) => {
@@ -24,11 +24,19 @@ export default async (req) => {
         patch.status = body.status;
       }
       if (body.adminNote !== undefined) patch.adminNote = String(body.adminNote).slice(0, 1000);
+
+      const current = await getOrder(body.ref);
+      if (!current) return error('Commande introuvable', 404);
+
+      // production checklist: { "<itemIndex>:<piece>": true|false, "gift": true|false }
+      if (body.printed !== undefined) {
+        if (typeof body.printed !== 'object' || body.printed === null) return error('Format invalide');
+        const entries = Object.entries(body.printed).slice(0, 200);
+        if (!entries.every(([k, v]) => /^(\d{1,2}:[\w-]{1,30}|gift)$/.test(k) && typeof v === 'boolean')) return error('Format invalide');
+        patch.printed = { ...(current.printed || {}), ...Object.fromEntries(entries) };
+      }
       if (!Object.keys(patch).length) return error('Rien à modifier');
       patch.updatedAt = new Date().toISOString();
-
-      const current = (await listOrders({ q: body.ref })).find((o) => o.ref === body.ref);
-      if (!current) return error('Commande introuvable', 404);
       if (patch.status && patch.status !== current.status) {
         patch.history = [...(current.history || []), { status: patch.status, at: patch.updatedAt }];
       }

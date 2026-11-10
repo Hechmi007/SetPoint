@@ -19,6 +19,8 @@
 .line .ctrl button{border:1.5px solid var(--line);background:var(--bg);color:var(--ink);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1rem}
 .line .rm{border:0!important;background:none!important;width:auto!important;color:var(--mut)!important;text-decoration:underline;font-size:.8rem!important}
 .line .amt{font-weight:800;white-space:nowrap}
+.line .thumb.cat{width:56px;height:56px;border-radius:12px;overflow:hidden;background:var(--beige);flex:none}
+.line .thumb.cat img{width:100%;height:100%;object-fit:cover;display:block}
 .sum div{display:flex;justify-content:space-between;padding:3px 0}
 .sum .tot{font-weight:900;font-size:1.2rem;border-top:1px solid var(--line);margin-top:6px;padding-top:8px}
 .empty{text-align:center;padding:48px 20px}
@@ -30,7 +32,7 @@
 <body>
 <header class="nav">
   <a class="logo" href="/"><img src="/img/logo-mark.svg" alt="" width="32" height="32">SETPOINT</a>
-  <nav><a href="/#boutique">Boutique</a><a class="cart-link" href="/panier">Panier <span class="cart-count" data-n="0">0</span></a></nav>
+  <nav><a href="/#boutique">Boutique</a><a href="/suivi">Suivi</a><a class="cart-link" href="/panier">Panier <span class="cart-count" data-n="0">0</span></a></nav>
 </header>
 
 <main class="w" style="padding-top:32px;padding-bottom:64px">
@@ -76,17 +78,41 @@ import { getCart, saveCart, renderPreview, money, esc, WHATSAPP } from '/js/comm
 const view = document.getElementById('view');
 const form = {};
 
-function lineTotal(it) { return getProduct(it.productId).price * it.qty; }
+const isCat = (it) => it.kind === 'catalog';
+function lineTotal(it) { return (isCat(it) ? it.price : getProduct(it.productId).price) * it.qty; }
+
+// Catalog items (keychains...) are re-checked against the live catalog: price, photo, availability.
+async function refreshCatalog() {
+  const cart = getCart();
+  const ids = [...new Set(cart.filter(isCat).map((it) => it.productId))];
+  if (!ids.length) return;
+  const found = Object.fromEntries(await Promise.all(ids.map(async (id) => {
+    try {
+      const r = await fetch('/api/products?id=' + encodeURIComponent(id));
+      if (r.status === 404) return [id, null];
+      return [id, r.ok ? (await r.json()).product : undefined];
+    } catch { return [id, undefined]; }
+  })));
+  const next = cart.filter((it) => {
+    if (!isCat(it) || found[it.productId] === undefined) return true; // network issue: keep as is
+    const p = found[it.productId]; if (!p) return false;
+    const v = p.variants.length ? p.variants.find((x) => x.id === it.variantId) : null;
+    if (p.variants.length && !v?.available) return false;
+    Object.assign(it, { name: p.name, price: v?.price ?? p.price, variantName: v?.name || null, image: v?.image || p.images[0] || '' });
+    return true;
+  });
+  if (JSON.stringify(next) !== JSON.stringify(cart)) saveCart(next);
+}
 
 function render() {
   // drop items saved with an older version of the catalog (removed product/part/color)
   const all = getCart();
-  const cart = all.filter((it) => { const p = getProduct(it.productId); return p && p.parts.every((pt) => getColor(it.colors?.[pt.id])?.available); });
+  const cart = all.filter((it) => { if (isCat(it)) return true; const p = getProduct(it.productId); return p && p.parts.every((pt) => getColor(it.colors?.[pt.id])?.available); });
   let changed = cart.length !== all.length;
-  cart.forEach((it) => { const p = getProduct(it.productId); if (p.fontPart && !getFont(it.font)?.available) { it.font = p.defaultFont; changed = true; } });
+  cart.forEach((it) => { if (isCat(it)) return; const p = getProduct(it.productId); if (p.fontPart && !getFont(it.font)?.available) { it.font = p.defaultFont; changed = true; } });
   if (changed) saveCart(cart);
   if (!cart.length) {
-    view.innerHTML = `<div class="empty card"><h2>Votre panier est vide</h2><p class="note">Créez votre compteur de score aux couleurs qui vous ressemblent.</p><a class="btn p" href="/produit?id=compteur-score">Personnaliser mon compteur</a></div>`;
+    view.innerHTML = `<div class="empty card"><h2>Votre panier est vide</h2><p class="note">Créez votre compteur de score aux couleurs qui vous ressemblent, ou découvrez nos autres créations.</p><a class="btn p" href="/produit?id=compteur-score">Personnaliser mon compteur</a> <a class="btn s" href="/#boutique">Voir la boutique</a></div>`;
     return;
   }
   if (!view.querySelector('#f')) {
@@ -95,6 +121,14 @@ function render() {
   }
   const lines = view.querySelector('#lines');
   lines.innerHTML = cart.map((it) => {
+    if (isCat(it)) {
+      const chips = (it.variantName ? `<span>${esc(it.variantName)}</span>` : '') + (it.personalization ? `<span>« ${esc(it.personalization)} »</span>` : '');
+      return `<div class="line" data-key="${esc(it.key)}">
+        <a class="thumb cat" href="/article?id=${encodeURIComponent(it.productId)}" title="Voir le produit">${it.image ? `<img src="${esc(it.image)}" alt="">` : ''}</a>
+        <div class="info"><strong>${esc(it.name)}</strong><div class="chips">${chips}</div>
+          <div class="ctrl"><button type="button" data-d="-1" aria-label="Moins">−</button><span>${it.qty}</span><button type="button" data-d="1" aria-label="Plus">+</button><button type="button" class="rm">Retirer</button></div></div>
+        <span class="amt">${money(lineTotal(it))}</span></div>`;
+    }
     const p = getProduct(it.productId);
     const chips = p.parts.map((pt) => { const c = getColor(it.colors[pt.id]); return `<span><i style="background:${c?.hex}"></i>${esc(pt.label)} : ${esc(c?.name)}</span>`; }).join('') + (getFont(it.font) ? `<span>Police : ${esc(getFont(it.font).name)}</span>` : '');
     const c = encodeURIComponent(p.parts.map((pt) => it.colors[pt.id]).join('.')) + (it.font ? `&f=${encodeURIComponent(it.font)}` : '');
@@ -104,12 +138,12 @@ function render() {
         <div class="ctrl"><button type="button" data-d="-1" aria-label="Moins">−</button><span>${it.qty}</span><button type="button" data-d="1" aria-label="Plus">+</button><button type="button" class="rm">Retirer</button></div></div>
       <span class="amt">${money(lineTotal(it))}</span></div>`;
   }).join('');
-  lines.querySelectorAll('.line').forEach((el, i) => renderPreview(el.querySelector('.thumb'), cart[i].productId, cart[i].colors, cart[i].font));
+  lines.querySelectorAll('.line').forEach((el, i) => { if (!isCat(cart[i])) renderPreview(el.querySelector('.thumb'), cart[i].productId, cart[i].colors, cart[i].font); });
   updateSummary();
 }
 
 function updateSummary() {
-  const sub = getCart().reduce((s, it) => s + (getProduct(it.productId) ? lineTotal(it) : 0), 0);
+  const sub = getCart().reduce((s, it) => s + (isCat(it) || getProduct(it.productId) ? lineTotal(it) : 0), 0);
   view.querySelector('#sub').textContent = money(sub);
   view.querySelector('#ship').textContent = money(SHIPPING.price);
   view.querySelector('#tot').textContent = money(sub + SHIPPING.price);
@@ -143,7 +177,8 @@ function setupForm() {
     if (!ok) { err.textContent = 'Merci de remplir tous les champs obligatoires.'; return; }
 
     const payload = {
-      items: getCart().map(({ productId, qty, colors, font }) => ({ productId, qty, colors, font })),
+      items: getCart().map((it) => isCat(it) ? { productId: it.productId, qty: it.qty, variantId: it.variantId, personalization: it.personalization }
+        : { productId: it.productId, qty: it.qty, colors: it.colors, font: it.font }),
       customer: { name: $('name').value, phone: $('phone').value, governorate: $('gov').value, address: $('address').value, notes: $('notes').value },
       keychainName: $('keychain').value,
       website: $('website').value,
@@ -171,13 +206,16 @@ function showDone(data, payload) {
     <p style="margin-top:-8px">Merci pour votre commande, et merci de soutenir le fait en Tunisie <img class="flag" src="/img/flag-tn.svg" alt=""></p>
     <p>Votre numéro de commande :</p>
     <div class="ref">${esc(data.ref)}</div>
-    <p>Nous vous appelons très vite au <strong>${esc(payload.customer.phone)}</strong> pour confirmer avant de lancer l’impression de votre compteur.</p>
-    <p><a class="btn p" target="_blank" rel="noopener" href="https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}">Nous écrire sur WhatsApp</a> <a class="btn s" href="/">Retour à la boutique</a></p>
+    <p>Gardez cette référence : avec votre numéro de téléphone, elle vous permet de <strong>suivre votre commande</strong> à tout moment.</p>
+    <p>Nous vous appelons très vite au <strong>${esc(payload.customer.phone)}</strong> pour confirmer avant de lancer l’impression.</p>
+    <p><a class="btn p" href="/suivi?ref=${encodeURIComponent(data.ref)}">Suivre ma commande</a> <a class="btn s" target="_blank" rel="noopener" href="https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}">WhatsApp</a></p>
+    <p><a href="/">Retour à la boutique</a></p>
   </div>`;
   window.scrollTo(0, 0);
 }
 
 render();
+refreshCatalog().then(render);
 </script>
 </body>
 </html>
