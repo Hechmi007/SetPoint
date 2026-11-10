@@ -10,13 +10,13 @@
 <style>
 .studio{display:grid;gap:28px;align-items:start}
 @media(min-width:880px){.studio{grid-template-columns:1fr 1.05fr}}
-.stage{position:relative;border-radius:28px;background:radial-gradient(120% 90% at 50% 20%,#2a6e4c 0%,#12382a 70%);box-shadow:var(--sh);display:flex;align-items:center;justify-content:center;padding:28px 0;min-height:520px}
+.stage{position:relative;border-radius:28px;background:radial-gradient(120% 90% at 50% 15%,#4A9BE0 0%,var(--blue) 45%,var(--blue-deep) 100%);box-shadow:var(--sh);display:flex;align-items:center;justify-content:center;padding:28px 0;min-height:520px}
 @media(min-width:880px){.stage{position:sticky;top:84px;min-height:calc(100vh - 120px);max-height:760px}}
 .stage .preview{height:min(600px,70vh);aspect-ratio:168/524}
 .stage svg{filter:drop-shadow(0 18px 24px rgba(0,0,0,.45))}
 .stage [data-part]{cursor:pointer}
 .stage [data-part].hl{filter:drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px rgba(255,255,255,.7))}
-.stage-hint{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:#d8e8de;font-size:.8rem}
+.stage-hint{position:absolute;bottom:14px;left:0;right:0;text-align:center;color:#e3effa;font-size:.8rem}
 .panel h1{font-size:clamp(1.8rem,5vw,2.6rem);margin-bottom:6px}
 .step{background:var(--card);border-radius:22px;padding:22px;box-shadow:var(--sh);margin-top:18px}
 .step-title{display:flex;align-items:baseline;gap:10px;margin:0 0 14px;font-size:1.05rem}
@@ -24,7 +24,7 @@
 .parts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 @media(max-width:480px){.parts{grid-template-columns:repeat(2,1fr)}}
 .part-btn{border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:14px;padding:10px 8px;cursor:pointer;font:inherit;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px;transition:border-color .15s}
-.part-btn[aria-pressed="true"]{border-color:var(--g2);background:var(--card);box-shadow:0 0 0 3px rgba(29,90,65,.16)}
+.part-btn[aria-pressed="true"]{border-color:var(--g2);background:var(--card);box-shadow:0 0 0 3px var(--ring)}
 .part-btn .dot{width:26px;height:26px;border-radius:50%;border:1px solid rgba(0,0,0,.2)}
 .part-btn .lbl{font-weight:700;font-size:.85rem}
 .part-btn .cn{font-size:.72rem;color:var(--mut);line-height:1.2}
@@ -48,7 +48,7 @@
 .fonts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 @media(max-width:480px){.fonts{grid-template-columns:repeat(2,1fr)}}
 .font-btn{border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:14px;padding:10px 6px 8px;cursor:pointer;text-align:center;display:flex;flex-direction:column;gap:2px}
-.font-btn[aria-checked="true"]{border-color:var(--g2);background:var(--card);box-shadow:0 0 0 3px rgba(29,90,65,.16)}
+.font-btn[aria-checked="true"]{border-color:var(--g2);background:var(--card);box-shadow:0 0 0 3px var(--ring)}
 .font-btn .smp{font-size:1.35rem;line-height:1.2;white-space:nowrap}
 .font-btn .fn{font:600 .75rem system-ui,sans-serif;color:var(--mut)}
 .buy{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
@@ -74,7 +74,7 @@
     </div>
 
     <div class="panel">
-      <span class="tag">Atelier de personnalisation</span> <span class="tag made-in" style="background:#fde3e5;color:#a3000e"><img class="flag" src="/img/flag-tn.svg" alt=""> Fabriqué en Tunisie</span>
+      <span class="tag">Atelier de personnalisation</span> <span class="tag made-in" style="background:#FFE4E6;color:#B5000F"><img class="flag" src="/img/flag-tn.svg" alt=""> Fabriqué en Tunisie</span>
       <h1 id="pname" style="margin-top:10px">Compteur de score</h1>
       <p class="note" id="ptag" style="margin:0"></p>
 
