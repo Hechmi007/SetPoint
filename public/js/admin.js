@@ -150,6 +150,9 @@ function openDrawer(ref) {
       <div class="field" style="margin-top:12px"><label for="dNote">Note interne</label><textarea id="dNote" rows="3" placeholder="Visible uniquement ici">${esc(o.adminNote || '')}</textarea></div>
       <button class="btn s sm" id="saveNote" style="margin-top:10px">Enregistrer la note</button>
       <ul class="hist" style="margin-top:14px">${(o.history || []).map((h) => `<li>${statusLabel(h.status)} — ${new Date(h.at).toLocaleString('fr-FR')}</li>`).join('')}</ul>
+    </div>
+    <div class="card"><h3 style="font-size:1rem">Notifications envoyées</h3>
+      ${o.notifications ? `<div class="nbs">${notifBadges(o.notifications)}</div>` : '<p class="note" style="margin:0">Commande passée avant l’activation des notifications.</p>'}
     </div>`;
   $('dw').querySelectorAll('.big').forEach((el) => itemThumb(el, o.items[el.dataset.i]));
   $('close').onclick = () => $('drawer').close();
@@ -161,6 +164,27 @@ function openDrawer(ref) {
   if (!$('drawer').open) $('drawer').showModal();
 }
 $('drawer').addEventListener('click', (e) => { if (e.target === $('drawer')) $('drawer').close(); });
+
+// ---------- notifications ----------
+const NOTIF = { email: '✉️ E-mail (vous)', telegram: '📨 Telegram (vous)', ownerWhatsapp: '💬 WhatsApp (vous)', clientWhatsapp: '💬 WhatsApp (client)' };
+function notifBadges(n) {
+  return Object.entries(NOTIF).map(([k, label]) => {
+    const v = n?.[k] || 'off';
+    const cls = v === 'sent' ? 'ok' : v === 'off' ? 'off' : 'ko';
+    const txt = v === 'sent' ? 'envoyé' : v === 'off' ? 'non configuré' : 'échec';
+    return `<div class="nb ${cls}" title="${esc(v)}"><span>${label}</span><b>${txt}</b>${cls === 'ko' ? `<small>${esc(v.replace(/^failed:\s*/, ''))}</small>` : ''}</div>`;
+  }).join('');
+}
+$('notifyTest').onclick = async () => {
+  const btn = $('notifyTest'); btn.disabled = true; btn.textContent = 'Envoi du test…';
+  try {
+    const { results } = await api('/api/admin/notify-test', { method: 'POST' });
+    $('notifyResult').hidden = false;
+    $('notifyResult').innerHTML = `<div class="card"><strong>Test des notifications</strong> <span class="note">(le message « client » est envoyé à votre propre numéro)</span>
+      <div class="nbs">${notifBadges(results)}</div></div>`;
+  } catch (ex) { toast(ex.message); }
+  finally { btn.disabled = false; btn.textContent = '🔔 Tester les notifications'; }
+};
 
 // ---------- start ----------
 production.init(ctx);

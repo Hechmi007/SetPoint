@@ -40,7 +40,8 @@ const PAGE = `<!DOCTYPE html>
 
   <main class="w" style="padding-bottom:64px">
     <section id="view-commandes" class="view">
-      <div class="top"><h1>Commandes</h1></div>
+      <div class="top"><h1>Commandes</h1><button class="btn s sm" id="notifyTest" type="button">🔔 Tester les notifications</button></div>
+      <div id="notifyResult" class="notify-result" hidden></div>
       <div class="stats" id="stats"></div>
       <div class="filters" id="filters"></div>
       <div class="table" id="list"></div>

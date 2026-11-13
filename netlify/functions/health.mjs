@@ -1,6 +1,7 @@
 // GET /api/health — is the server configured and can it reach the database? Reveals no secrets.
 import { pingDb, classifyDbError } from '../lib/db.mjs';
 import { json, adminConfigured } from '../lib/http.mjs';
+import { channels } from '../lib/notify.mjs';
 
 export default async () => {
   let db;
@@ -12,6 +13,7 @@ export default async () => {
       MONGODB_DB: !!process.env.MONGODB_DB,
       admin: adminConfigured(),
     },
+    notifications: channels(), // which channels are switched on (true/false or provider name), never the keys
   }, db === 'ok' ? 200 : 503);
 };
 

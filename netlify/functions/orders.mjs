@@ -1,7 +1,8 @@
 // POST /api/orders — a customer places an order. Prices are recomputed server-side.
 import crypto from 'node:crypto';
 import { getProduct, getColor, getFont, GOVERNORATES, SHIPPING } from '../../public/js/products.js';
-import { insertOrder, classifyDbError } from '../lib/db.mjs';
+import { insertOrder, updateOrder, classifyDbError } from '../lib/db.mjs';
+import { notifyNewOrder } from '../lib/notify.mjs';
 import { getCatalogProduct, unitPrice } from '../lib/catalog.mjs';
 import { json, error, readJson } from '../lib/http.mjs';
 
@@ -107,6 +108,17 @@ export default async (req) => {
     console.error('insertOrder failed', code, e);
     return json({ error: `Impossible d’enregistrer la commande (code : ${code}). Réessayez ou contactez-nous sur WhatsApp.`, code }, 500);
   }
+
+  // The order is saved; now tell the owner (email / WhatsApp) and the customer (WhatsApp).
+  // Capped at 8 s and never allowed to fail the order: the outcome is stored on it for the admin.
+  try {
+    const siteUrl = process.env.SITE_URL || process.env.URL || new URL(req.url).origin;
+    const notifications = await Promise.race([
+      notifyNewOrder(order, siteUrl),
+      new Promise((resolve) => setTimeout(() => resolve({ email: 'failed: délai dépassé', telegram: 'failed: délai dépassé', ownerWhatsapp: 'failed: délai dépassé', clientWhatsapp: 'failed: délai dépassé', at: new Date().toISOString() }), 8000)),
+    ]);
+    await updateOrder(order.ref, { notifications });
+  } catch (e) { console.error('notifications', e); }
 
   return json({ ok: true, ref: order.ref, total: order.total, shipping: order.shipping }, 201);
 };

@@ -57,6 +57,15 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
 .item .big:has(img){height:60px}
 .noimg{display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:var(--beige);border-radius:6px}
 
+/* ---------- notification status ---------- */
+.notify-result{margin-bottom:16px}.notify-result .card{padding:16px 18px}
+.nbs{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-top:10px}
+.nb{border-radius:12px;padding:8px 12px;font-size:.85rem;display:flex;flex-direction:column;gap:2px;border:1.5px solid var(--line)}
+.nb b{font-size:.9rem}.nb small{color:inherit;opacity:.85;word-break:break-word}
+.nb.ok{background:#d4f2df;color:#135c33;border-color:#a8dcbb}
+.nb.ko{background:#ffe4e6;color:#a3000e;border-color:#f3b3b8}
+.nb.off{background:var(--bg);color:var(--mut)}
+
 /* ---------- tabs ---------- */
 .tabs{position:sticky;top:59px;z-index:15;display:flex;gap:4px;align-items:center;background:var(--card);border-bottom:1px solid var(--line);padding:0 max(16px,calc((100vw - 1040px)/2));overflow-x:auto}
 .tabs a{padding:14px 14px 12px;text-decoration:none;font-weight:700;color:var(--mut);border-bottom:3px solid transparent;white-space:nowrap}

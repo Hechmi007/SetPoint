@@ -2,11 +2,12 @@
   publish = "public"
   functions = "netlify/functions"
 
-# MONGODB_DB is just the database name ("setpoint"), not a secret. Without this, Netlify's secret
-# scanner finds the word "setpoint" all over the code and fails the build. Real secrets
-# (MONGODB_URI, ADMIN_PATH, ADMIN_PASSWORD_HASH, AUTH_SECRET) are still scanned.
+# These settings are not secrets (database name, public phone number, template names, ...). Their
+# values also appear in the code ("setpoint", the shop's WhatsApp number, "fr"), so if they were
+# marked secret in Netlify the secret scanner would fail the build. Real secrets are still scanned:
+# MONGODB_URI, ADMIN_PATH, ADMIN_PASSWORD_HASH, AUTH_SECRET, RESEND_API_KEY, TELEGRAM_BOT_TOKEN, CALLMEBOT_APIKEY, WHATSAPP_TOKEN.
 [build.environment]
-  SECRETS_SCAN_OMIT_KEYS = "MONGODB_DB"
+  SECRETS_SCAN_OMIT_KEYS = "MONGODB_DB,TELEGRAM_CHAT_ID,OWNER_WHATSAPP,NOTIFY_EMAIL,NOTIFY_FROM,SITE_URL,WHATSAPP_PHONE_ID,WHATSAPP_TEMPLATE_CLIENT,WHATSAPP_TEMPLATE_ADMIN,WHATSAPP_TEMPLATE_LANG,WHATSAPP_API_VERSION"
 
 [functions]
   node_bundler = "esbuild"
