@@ -23,6 +23,17 @@
 .line .thumb.cat img{width:100%;height:100%;object-fit:cover;display:block}
 .sum div{display:flex;justify-content:space-between;padding:3px 0}
 .sum .tot{font-weight:900;font-size:1.2rem;border-top:1px solid var(--line);margin-top:6px;padding-top:8px}
+.sum .neg{color:var(--ok);font-weight:700}
+.coupon-row{display:flex;gap:8px}
+.coupon-row input{flex:1;text-transform:uppercase;font-family:ui-monospace,Consolas,monospace;font-weight:700;letter-spacing:.04em}
+.cmsg{margin:6px 0 0;font-size:.85rem;min-height:1.2em}.cmsg.ok{color:var(--ok);font-weight:600}.cmsg.ko{color:var(--err);font-weight:600}
+.linkbtn{border:0;background:none;color:var(--mut);text-decoration:underline;cursor:pointer;font:inherit;padding:0}
+.nudge{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:linear-gradient(135deg,var(--gift-a),var(--gift-b));border:1.5px dashed var(--tn);border-radius:16px;padding:12px 14px;margin-top:14px}
+.nudge strong{display:block;font-size:.95rem}
+.kc{margin-top:10px;display:grid;gap:6px}.kc-t{font-size:.8rem;font-weight:700;color:var(--mut)}
+.kcin{padding:8px 10px;font-size:.9rem}
+.shiphint{margin-top:12px;font-size:.88rem;color:var(--mut)}.shiphint.ok{color:var(--ok);font-weight:700}.shiphint b{color:var(--ink)}
+.shiphint .bar{height:6px;background:var(--beige);border-radius:99px;overflow:hidden;margin-top:6px}.shiphint .bar span{display:block;height:100%;background:var(--tn);border-radius:99px}
 .empty{text-align:center;padding:48px 20px}
 .done{text-align:center;max-width:560px;margin:auto}
 .done .ref{font-family:ui-monospace,Consolas,monospace;font-size:1.4rem;font-weight:800;background:var(--beige);border-radius:12px;padding:8px 16px;display:inline-block;margin:8px 0 16px}
@@ -44,6 +55,8 @@
   <div class="checkout">
     <div class="card">
       <div id="lines"></div>
+      <div id="nudge"></div>
+      <div id="shipHint"></div>
       <p style="margin:12px 0 0"><a href="/produit?id=compteur-score">+ Créer un autre modèle</a></p>
     </div>
 
@@ -54,15 +67,14 @@
         <div class="field"><label for="phone">Téléphone</label><input id="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="ex. 20 123 456" required></div>
         <div class="field full"><label for="gov">Gouvernorat</label><select id="gov" required><option value="">Choisir…</option></select></div>
         <div class="field full"><label for="address">Adresse de livraison</label><textarea id="address" rows="2" autocomplete="street-address" placeholder="Rue, immeuble, ville…" required></textarea></div>
-        <div class="field full"><label for="keychain">🎁 Prénom pour le porte-clé offert</label><input id="keychain" maxlength="20" placeholder="Ex. Amine"></div>
         <div class="field full"><label for="notes">Notes (facultatif)</label><textarea id="notes" rows="2" placeholder="Repère, horaire d’appel…"></textarea></div>
         <div class="hp" aria-hidden="true"><label for="website">Site web</label><input id="website" tabindex="-1" autocomplete="off"></div>
-        <div class="field full sum" aria-live="polite">
-          <div><span>Sous-total</span><span id="sub"></span></div>
-          <div><span>Porte-clé personnalisé</span><span>Offert</span></div>
-          <div><span>Livraison (toute la Tunisie)</span><span id="ship"></span></div>
-          <div class="tot"><span>Total</span><span id="tot"></span></div>
+        <div class="field full">
+          <label for="coupon">Code promo</label>
+          <div class="coupon-row"><input id="coupon" placeholder="Ex. COACH10" autocomplete="off" autocapitalize="characters" maxlength="24"><button type="button" class="btn s sm" id="applyCoupon">Appliquer</button></div>
+          <p id="couponMsg" class="cmsg" aria-live="polite"></p>
         </div>
+        <div class="field full sum" id="sumRows" aria-live="polite"></div>
       </div>
       <button class="btn p" style="width:100%;margin-top:18px" id="submit">Confirmer la commande</button>
       <p id="err" role="alert"></p>
@@ -73,6 +85,7 @@
 
 <script type="module">
 import { getProduct, getColor, getFont, GOVERNORATES, SHIPPING } from '/js/products.js';
+import { computePricing, packNudge } from '/js/pricing.js';
 import { getCart, saveCart, renderPreview, money, esc, WHATSAPP } from '/js/common.js';
 
 const view = document.getElementById('view');
@@ -104,12 +117,101 @@ async function refreshCatalog() {
   if (JSON.stringify(next) !== JSON.stringify(cart)) saveCart(next);
 }
 
+// What the server needs to price an order (never prices: it recomputes everything itself).
+const orderItems = (cart) => cart.map((it) => isCat(it) ? { productId: it.productId, qty: it.qty, variantId: it.variantId, personalization: it.personalization }
+  : { productId: it.productId, qty: it.qty, colors: it.colors, font: it.font, keychains: it.keychains });
+
+// ---------- promo code (kept in this browser so a coach's link ?code=XXX applies by itself) ----------
+const COUPON_KEY = 'setpoint-coupon';
+const savedCode = { get: () => { try { return localStorage.getItem(COUPON_KEY) || ''; } catch { return ''; } }, set: (v) => { try { v ? localStorage.setItem(COUPON_KEY, v) : localStorage.removeItem(COUPON_KEY); } catch {} } };
+const cleanCode = (s) => String(s || '').toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 24);
+let coupon = { code: savedCode.get(), state: '', text: '', error: '' };   // state: '' | checking | applied | error
+let quoteSeq = 0;
+
+function renderCouponBox() {
+  const input = view.querySelector('#coupon'), msg = view.querySelector('#couponMsg'); if (!input) return;
+  if (document.activeElement !== input && input.value !== coupon.code) input.value = coupon.code;
+  msg.className = 'cmsg ' + (coupon.state === 'applied' ? 'ok' : coupon.state === 'error' ? 'ko' : '');
+  msg.innerHTML = coupon.state === 'applied' ? `✓ Code <b>${esc(coupon.code)}</b> appliqué (${esc(coupon.text)}) · <button type="button" id="rmCoupon" class="linkbtn">Retirer</button>`
+    : coupon.state === 'error' ? esc(coupon.error) : coupon.state === 'checking' ? 'Vérification du code…' : '';
+  view.querySelector('#applyCoupon').disabled = coupon.state === 'checking';
+}
+function applyCoupon() {
+  const code = cleanCode(view.querySelector('#coupon').value);
+  if (code.length < 3) { coupon = { code, state: 'error', text: '', error: 'Entrez un code promo valide' }; renderCouponBox(); return; }
+  savedCode.set(code); coupon = { code, state: '', text: '', error: '' }; refreshPricing();
+}
+function removeCoupon() { savedCode.set(''); coupon = { code: '', state: '', text: '', error: '' }; view.querySelector('#coupon').value = ''; refreshPricing(); }
+
+function renderSummary(p) {
+  const rows = [
+    ['Sous-total', money(p.listSubtotal)],
+    ...p.packs.map((k) => [`📦 ${k.name}${k.count > 1 ? ' × ' + k.count : ''}`, `−${money(Math.round(k.saving * k.count * 100) / 100)}`, 'neg']),
+    p.couponCode ? [`🎟️ Code ${p.couponCode}`, `−${money(p.couponDiscount)}`, 'neg'] : null,
+    p.counters ? [`🎁 Porte-clés personnalisés × ${p.counters}`, 'Offerts'] : null,
+    ['Livraison (toute la Tunisie)', p.shipping.free ? 'Offerte 🎉' : money(p.shipping.price)],
+  ].filter(Boolean);
+  view.querySelector('#sumRows').innerHTML = rows.map(([k, v, c]) => `<div class="${c || ''}"><span>${k}</span><span>${v}</span></div>`).join('')
+    + `<div class="tot"><span>Total</span><span>${money(p.total)}</span></div>`;
+}
+
+function renderNudge(counters) {
+  const el = view.querySelector('#nudge'), n = packNudge(counters);
+  if (!n) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="nudge"><div><strong>Ajoutez ${n.add} compteur${n.add > 1 ? 's' : ''} pour seulement ${money(n.extra)} de plus</strong>
+    <span class="note">${esc(n.summary)} : ${money(n.newTotal)}${n.freeShipping ? ', livraison offerte' : ''}</span></div>
+    <a class="btn p sm" href="/produit?id=compteur-score${n.pack ? '&pack=' + n.pack : ''}">Ajouter</a></div>`;
+}
+
+function renderShipHint(p) {
+  const el = view.querySelector('#shipHint'), from = SHIPPING.freeFrom;
+  if (!from || !p.merchandise) { el.innerHTML = ''; return; }
+  const missing = Math.round((from - p.merchandise) * 100) / 100;
+  el.innerHTML = p.shipping.free ? `<div class="shiphint ok">🚚 Livraison offerte !</div>`
+    : `<div class="shiphint">🚚 Plus que <b>${money(missing)}</b> d’achats pour la livraison offerte (dès ${money(from)})<div class="bar"><span style="width:${Math.min(100, Math.round(p.merchandise / from * 100))}%"></span></div></div>`;
+}
+
+async function refreshPricing() {
+  if (!view.querySelector('#sumRows')) return;
+  const cart = getCart();
+  const local = computePricing(cart, null);          // instant preview; the server confirms it when a code is used
+  renderSummary(local); renderNudge(local.counters); renderShipHint(local); renderCouponBox();
+  if (!coupon.code || coupon.state === 'error') return;
+  const seq = ++quoteSeq;
+  coupon.state = 'checking'; renderCouponBox();
+  try {
+    const res = await fetch('/api/quote', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ items: orderItems(cart), coupon: coupon.code }) });
+    const data = await res.json().catch(() => ({}));
+    if (seq !== quoteSeq) return;
+    if (!res.ok) throw Object.assign(new Error(data.error || 'réseau'), { http: true });
+    if (data.coupon?.ok) { coupon = { code: coupon.code, state: 'applied', text: data.coupon.text, error: '' }; renderSummary(data.pricing); renderNudge(data.pricing.counters); renderShipHint(data.pricing); }
+    else { savedCode.set(''); coupon = { code: coupon.code, state: 'error', text: '', error: data.coupon?.error || 'Code promo invalide' }; }
+  } catch (ex) {
+    if (seq !== quoteSeq) return;
+    coupon = { code: coupon.code, state: 'error', text: '', error: ex.http ? ex.message : 'Impossible de vérifier le code pour le moment. Réessayez.' };
+  }
+  renderCouponBox();
+}
+
+// Every counter comes with a free personalized keychain: one name per counter, kept with the cart item.
+function ensureKeychains(it) {
+  const cur = Array.isArray(it.keychains) ? it.keychains.slice(0, it.qty) : [];
+  while (cur.length < it.qty) cur.push('');
+  it.keychains = cur;
+}
+function kcBlock(it, p) {
+  const max = p.keychain?.maxLength || 20;
+  return `<div class="kc"><div class="kc-t">🎁 ${it.qty > 1 ? `${it.qty} porte-clés offerts : un prénom par compteur` : 'Porte-clé offert : prénom à inscrire'}</div>
+    ${it.keychains.map((n, i) => `<input class="kcin" data-key="${esc(it.key)}" data-i="${i}" value="${esc(n)}" maxlength="${max}" placeholder="${it.qty > 1 ? `Prénom du porte-clé n°${i + 1}` : 'Ex. Amine'}" aria-label="Prénom du porte-clé ${i + 1}" autocomplete="off">`).join('')}</div>`;
+}
+
 function render() {
   // drop items saved with an older version of the catalog (removed product/part/color)
   const all = getCart();
   const cart = all.filter((it) => { if (isCat(it)) return true; const p = getProduct(it.productId); return p && p.parts.every((pt) => getColor(it.colors?.[pt.id])?.available); });
   let changed = cart.length !== all.length;
   cart.forEach((it) => { if (isCat(it)) return; const p = getProduct(it.productId); if (p.fontPart && !getFont(it.font)?.available) { it.font = p.defaultFont; changed = true; } });
+  cart.forEach((it) => { if (isCat(it)) return; const before = JSON.stringify(it.keychains); ensureKeychains(it); if (JSON.stringify(it.keychains) !== before) changed = true; });
   if (changed) saveCart(cart);
   if (!cart.length) {
     view.innerHTML = `<div class="empty card"><h2>Votre panier est vide</h2><p class="note">Créez votre compteur de score aux couleurs qui vous ressemblent, ou découvrez nos autres créations.</p><a class="btn p" href="/produit?id=compteur-score">Personnaliser mon compteur</a> <a class="btn s" href="/#boutique">Voir la boutique</a></div>`;
@@ -135,19 +237,20 @@ function render() {
     return `<div class="line" data-key="${esc(it.key)}">
       <a class="thumb" href="/produit?id=${p.id}&c=${c}" title="Modifier"></a>
       <div class="info"><strong>${esc(p.name)}</strong><div class="chips">${chips}</div>
-        <div class="ctrl"><button type="button" data-d="-1" aria-label="Moins">−</button><span>${it.qty}</span><button type="button" data-d="1" aria-label="Plus">+</button><button type="button" class="rm">Retirer</button></div></div>
+        <div class="ctrl"><button type="button" data-d="-1" aria-label="Moins">−</button><span>${it.qty}</span><button type="button" data-d="1" aria-label="Plus">+</button><button type="button" class="rm">Retirer</button></div>${kcBlock(it, p)}</div>
       <span class="amt">${money(lineTotal(it))}</span></div>`;
   }).join('');
   lines.querySelectorAll('.line').forEach((el, i) => { if (!isCat(cart[i])) renderPreview(el.querySelector('.thumb'), cart[i].productId, cart[i].colors, cart[i].font); });
-  updateSummary();
+  refreshPricing();
 }
 
-function updateSummary() {
-  const sub = getCart().reduce((s, it) => s + (isCat(it) || getProduct(it.productId) ? lineTotal(it) : 0), 0);
-  view.querySelector('#sub').textContent = money(sub);
-  view.querySelector('#ship').textContent = money(SHIPPING.price);
-  view.querySelector('#tot').textContent = money(sub + SHIPPING.price);
-}
+// typing a keychain name: saved with the cart item right away (no re-render, so the cursor stays put)
+view.addEventListener('input', (e) => {
+  const el = e.target.closest('.kcin'); if (!el) return;
+  el.classList.remove('invalid');
+  const cart = getCart(), it = cart.find((x) => x.key === el.dataset.key); if (!it) return;
+  ensureKeychains(it); it.keychains[Number(el.dataset.i)] = el.value; saveCart(cart);
+});
 
 view.addEventListener('click', (e) => {
   const line = e.target.closest('.line'); if (!line) return;
@@ -161,7 +264,9 @@ view.addEventListener('click', (e) => {
 function setupForm() {
   const gov = view.querySelector('#gov');
   GOVERNORATES.forEach((g) => gov.add(new Option(g, g)));
-  gov.addEventListener('change', updateSummary);
+  view.querySelector('#applyCoupon').addEventListener('click', applyCoupon);
+  view.querySelector('#coupon').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); applyCoupon(); } });
+  view.querySelector('#couponMsg').addEventListener('click', (e) => { if (e.target.id === 'rmCoupon') removeCoupon(); });
   // remember details for returning customers (this browser only)
   try { const saved = JSON.parse(localStorage.getItem('setpoint-customer') || '{}'); for (const k of ['name', 'phone', 'gov', 'address']) if (saved[k]) view.querySelector('#' + k).value = saved[k]; } catch {}
 
@@ -175,21 +280,31 @@ function setupForm() {
       $(id).classList.toggle('invalid', bad); if (bad) ok = false;
     }
     if (!ok) { err.textContent = 'Merci de remplir tous les champs obligatoires.'; return; }
+    // one name per counter for the free keychains
+    let missing = 0;
+    view.querySelectorAll('.kcin').forEach((inp) => { const bad = !inp.value.trim(); inp.classList.toggle('invalid', bad); if (bad) missing++; });
+    if (missing) {
+      err.textContent = `Merci d’indiquer le prénom de chaque porte-clé offert (${missing} manquant${missing > 1 ? 's' : ''}).`;
+      const first = view.querySelector('.kcin.invalid'); first.scrollIntoView({ behavior: 'smooth', block: 'center' }); first.focus();
+      return;
+    }
 
     const payload = {
-      items: getCart().map((it) => isCat(it) ? { productId: it.productId, qty: it.qty, variantId: it.variantId, personalization: it.personalization }
-        : { productId: it.productId, qty: it.qty, colors: it.colors, font: it.font }),
+      items: orderItems(getCart()),
       customer: { name: $('name').value, phone: $('phone').value, governorate: $('gov').value, address: $('address').value, notes: $('notes').value },
-      keychainName: $('keychain').value,
+      coupon: coupon.state === 'error' ? '' : coupon.code,
       website: $('website').value,
     };
     const btn = $('submit'); btn.disabled = true; btn.textContent = 'Envoi…';
     try {
       const res = await fetch('/api/orders', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Erreur réseau');
+      if (!res.ok) {
+        if (data.coupon) { savedCode.set(''); coupon = { code: coupon.code, state: 'error', text: '', error: data.error }; renderCouponBox(); refreshPricing(); }
+        throw new Error(data.error || 'Erreur réseau');
+      }
       try { localStorage.setItem('setpoint-customer', JSON.stringify({ name: $('name').value, phone: $('phone').value, gov: $('gov').value, address: $('address').value })); } catch {}
-      saveCart([]);
+      saveCart([]); savedCode.set('');
       showDone(data, payload);
     } catch (ex) {
       err.textContent = ex.message + '.';
@@ -206,6 +321,8 @@ function showDone(data, payload) {
     <p style="margin-top:-8px">Merci pour votre commande, et merci de soutenir le fait en Tunisie <img class="flag" src="/img/flag-tn.svg" alt=""></p>
     <p>Votre numéro de commande :</p>
     <div class="ref">${esc(data.ref)}</div>
+    ${data.keychains ? `<p style="margin-top:-6px">🎁 ${data.keychains} porte-clé${data.keychains > 1 ? 's' : ''} personnalisé${data.keychains > 1 ? 's' : ''} offert${data.keychains > 1 ? 's' : ''} avec votre commande</p>` : ''}
+    ${data.packs?.length || data.coupon ? `<p style="color:var(--ok);font-weight:700;margin-top:-6px">${(data.packs || []).map((k) => '📦 ' + esc(k.name) + (k.count > 1 ? ' × ' + k.count : '')).join(' · ')}${data.packs?.length && data.coupon ? ' · ' : ''}${data.coupon ? '🎟️ Code ' + esc(data.coupon.code) + ' : −' + money(data.coupon.discount) : ''}</p>` : ''}
     <p>Gardez cette référence : avec votre numéro de téléphone, elle vous permet de <strong>suivre votre commande</strong> à tout moment.</p>
     <p>Nous vous appelons très vite au <strong>${esc(payload.customer.phone)}</strong> pour confirmer avant de lancer l’impression.</p>
     <p><a class="btn p" href="/suivi?ref=${encodeURIComponent(data.ref)}">Suivre ma commande</a> <a class="btn s" target="_blank" rel="noopener" href="https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}">WhatsApp</a></p>

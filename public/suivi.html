@@ -105,6 +105,7 @@ function show(o) {
       <div><b>${label}</b>${i === idx ? `<div>${text}</div>` : ''}${when[id] ? `<div class="when">${fmt(when[id])}</div>` : ''}</div></li>`).join('')}</ol>`}
     <h3 style="font-size:1rem;margin-top:10px">Votre commande</h3>
     <ul class="items">${o.items.map((it) => `<li><span>${esc(it.name)}${it.variant ? ` — ${esc(it.variant)}` : ''}${it.personalization ? ` <span class="note">« ${esc(it.personalization)} »</span>` : ''}</span><b>× ${it.qty}</b></li>`).join('')}</ul>
+    ${o.keychains ? `<p class="note" style="margin:10px 0 0">🎁 ${o.keychains} porte-clé${o.keychains > 1 ? 's' : ''} personnalisé${o.keychains > 1 ? 's' : ''} offert${o.keychains > 1 ? 's' : ''} avec votre commande</p>` : ''}
     <div class="tot"><span>Total${o.shipping?.price ? ` (livraison ${money(o.shipping.price)} incluse)` : ''}</span><span>${money(o.total)}</span></div>
     <p style="margin:18px 0 0"><a class="btn s" target="_blank" rel="noopener" href="https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}">Une question ? WhatsApp</a></p>
   </div>`;

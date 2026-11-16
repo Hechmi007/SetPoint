@@ -23,7 +23,7 @@
     <p class="darija">Ma tensech el score ! <span class="ar" lang="ar">ما تنساش السكور</span></p>
     <p>Le compteur de score compact qui se fixe sur votre raquette de padel ou de tennis, <strong>conçu et fabriqué en Tunisie</strong>. 100 % personnalisable : choisissez la couleur du corps, de l’écriture et des curseurs, et même la police.</p>
     <div class="price">25 DT</div>
-    <ul class="c"><li>Porte-clé personnalisé offert avec le prénom de votre choix</li><li>9 couleurs à combiner, d’autres bientôt disponibles</li><li>Choix de la police d’écriture</li></ul>
+    <ul class="c"><li>1 porte-clé personnalisé offert par compteur, avec le prénom de votre choix</li><li>9 couleurs à combiner, d’autres bientôt disponibles</li><li>Choix de la police d’écriture</li><li>Packs Duo et Équipe : le compteur moins cher à plusieurs · livraison offerte dès 100 DT</li></ul>
     <a class="btn p" href="/produit?id=compteur-score">Créer le mien</a> <a class="btn s" href="#details">Découvrir le produit</a>
   </div>
   <div class="ph r45"><img src="/img/compteur.jpg" alt="Compteur de score SETPOINT fixé devant une raquette"></div>
@@ -33,6 +33,13 @@
   <h2>La boutique</h2>
   <p class="note" style="margin-top:-6px">Chaque pièce est imprimée à la commande, dans les couleurs que vous choisissez.</p>
   <div class="products" id="products"></div>
+</div></section>
+
+<section id="packs"><div class="w rv">
+  <h2>Jouez en équipe, payez moins.</h2>
+  <p class="note" style="margin-top:-6px">Chaque compteur d’un pack se personnalise séparément : mêmes couleurs ou une couleur par joueur.</p>
+  <div class="packs" id="packGrid"></div>
+  <p class="note" id="packNote" style="margin:16px 0 0"></p>
 </div></section>
 
 <section class="tn-section" id="tunisie">
@@ -48,7 +55,7 @@
     <div class="tn-cards">
       <div class="tn-card"><h3><img class="flag" src="/img/flag-tn.svg" alt=""> Conçu en Tunisie</h3><p>Imaginé par des passionnés de padel et de tennis, pour les joueurs d’ici.</p></div>
       <div class="tn-card"><h3>🛠️ Fabriqué ici</h3><p>Imprimé en 3D et assemblé à la main dans notre atelier en Tunisie, pièce par pièce.</p></div>
-      <div class="tn-card"><h3>🚚 Livré partout</h3><p>Dans les 24 gouvernorats, de Bizerte à Tataouine, pour 8 DT.</p></div>
+      <div class="tn-card"><h3>🚚 Livré partout</h3><p>Dans les 24 gouvernorats, de Bizerte à Tataouine, pour 8 DT, offerte dès 100 DT d’achats.</p></div>
       <div class="tn-card"><h3>🤝 Soutenez le local</h3><p>Chaque compteur commandé fait vivre le savoir-faire et les jeunes créateurs tunisiens.</p></div>
     </div>
   </div>
@@ -81,7 +88,7 @@
 <section style="padding-top:0"><div class="w rv"><div class="gift">
   <div>
     <h2>Un petit cadeau en plus !</h2>
-    <p>Pour chaque commande, recevez gratuitement un porte-clé personnalisé avec le prénom de votre choix.</p>
+    <p>Pour chaque compteur, recevez gratuitement un porte-clé personnalisé avec le prénom de votre choix.</p>
     <strong>Inclus sans supplément.</strong>
   </div>
   <img src="/img/porte-cle.jpg" alt="Porte-clé SETPOINT personnalisé avec prénom" loading="lazy">
@@ -96,7 +103,8 @@
 </footer>
 
 <script type="module">
-import { PRODUCTS } from '/js/products.js';
+import { PRODUCTS, SHIPPING } from '/js/products.js';
+import { PACKS } from '/js/pricing.js';
 import { esc, money, revealOnScroll } from '/js/common.js';
 const card = (p, href, tag, cta, priceLabel) => `
   <a class="product-card" href="${href}">
@@ -115,6 +123,21 @@ fetch('/api/products').then((r) => r.ok ? r.json() : { products: [] }).then(({ p
   grid.innerHTML = builtIn + products.map((p) => card(p, `/article?id=${encodeURIComponent(p.id)}`, p.category || 'Nouveau', 'Voir',
     (p.minPrice < p.price ? 'dès ' : '') + money(p.minPrice))).join('');
 }).catch(() => {});
+const unitPrice = PRODUCTS[0].price;
+const tile = (href, name, price, was, perks, cta, best) => `
+  <a class="pack ${best ? 'best' : ''}" href="${href}">${best ? '<span class="ribbon">Meilleur prix</span>' : ''}
+    <h3>${esc(name)}</h3>
+    <div class="pp">${money(price)}${was ? ` <span class="was">${money(was)}</span>` : ''}</div>
+    <ul>${perks.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
+    <span class="btn ${best ? 'p' : 's'}">${cta}</span></a>`;
+document.getElementById('packGrid').innerHTML =
+  tile('/produit?id=compteur-score', '1 compteur', unitPrice, 0, ['Personnalisé à vos couleurs', '1 porte-clé prénom offert', `+ ${money(SHIPPING.price)} de livraison`], 'Créer le mien', false)
+  + PACKS.map((p) => {
+    const list = p.size * unitPrice;
+    return tile(`/produit?id=compteur-score&pack=${p.id}`, p.name, p.price, list,
+      [`${p.size} compteurs personnalisables`, `${p.size} porte-clés prénom offerts`, `${money(p.price / p.size)} le compteur`, `Vous économisez ${money(list - p.price)}`], `Créer mon ${p.name.toLowerCase()}`, p.id === 'equipe');
+  }).join('');
+document.getElementById('packNote').textContent = `🚚 Livraison ${money(SHIPPING.price)}, offerte dès ${money(SHIPPING.freeFrom)} d’achats. Un porte-clé personnalisé est offert avec chaque compteur.`;
 revealOnScroll();
 </script>
 </body>

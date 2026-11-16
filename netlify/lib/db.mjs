@@ -17,6 +17,8 @@ async function mongoCollection(name = 'orders') {
       await db.collection('products').createIndex({ id: 1 }, { unique: true });
       await db.collection('products').createIndex({ ref: 1 }, { unique: true });
       await db.collection('images').createIndex({ id: 1 }, { unique: true });
+      await db.collection('coupons').createIndex({ code: 1 }, { unique: true });
+      await col.createIndex({ couponCode: 1 }, { sparse: true });
       return c;
     }).catch((err) => { clientPromise = undefined; throw err; });
   }

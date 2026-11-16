@@ -57,6 +57,23 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
 .item .big:has(img){height:60px}
 .noimg{display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:var(--beige);border-radius:6px}
 
+/* ---------- amounts in the order drawer ---------- */
+.amounts dd.neg{color:#135c33;font-weight:700}.amounts dt.tot,.amounts dd.tot{border-top:1px solid var(--line);padding-top:6px;font-size:1.05rem}
+
+/* ---------- promo codes ---------- */
+.cpgrid{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+.cp{padding:16px 18px}.cp.off{opacity:.7}
+.cp-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cp-code{font:900 1.2rem ui-monospace,Consolas,monospace;background:var(--beige);border-radius:10px;padding:3px 10px;letter-spacing:.04em}
+.cp-val{font-weight:900;color:var(--tn);font-size:1.15rem;margin-right:auto}
+.cp-who{font-weight:700;margin:8px 0 2px}
+.cp-nums{display:flex;flex-wrap:wrap;gap:6px 18px;margin:12px 0 4px}
+.cp-nums div{display:flex;flex-direction:column;line-height:1.25}.cp-nums b{font-size:1.05rem}.cp-nums span{font-size:.72rem;color:var(--mut)}
+.cp-codebox{display:flex;gap:8px}.cp-codebox input{flex:1}
+.cp-valrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.cp-val-in{display:flex;align-items:center;gap:6px}.cp-val-in input{width:110px}.cp-val-in span{font-weight:700;color:var(--mut)}
+#cpForm .card{margin-bottom:12px}
+
 /* ---------- notification status ---------- */
 .notify-result{margin-bottom:16px}.notify-result .card{padding:16px 18px}
 .nbs{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-top:10px}

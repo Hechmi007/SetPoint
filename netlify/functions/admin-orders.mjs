@@ -28,11 +28,11 @@ export default async (req) => {
       const current = await getOrder(body.ref);
       if (!current) return error('Commande introuvable', 404);
 
-      // production checklist: { "<itemIndex>:<piece>": true|false, "gift": true|false }
+      // production checklist: { "<itemIndex>:<piece>": true|false, "gift:<n>": true|false (one per keychain), "gift" (older orders) }
       if (body.printed !== undefined) {
         if (typeof body.printed !== 'object' || body.printed === null) return error('Format invalide');
         const entries = Object.entries(body.printed).slice(0, 200);
-        if (!entries.every(([k, v]) => /^(\d{1,2}:[\w-]{1,30}|gift)$/.test(k) && typeof v === 'boolean')) return error('Format invalide');
+        if (!entries.every(([k, v]) => /^(\d{1,2}:[\w-]{1,30}|gift(:\d{1,3})?)$/.test(k) && typeof v === 'boolean')) return error('Format invalide');
         patch.printed = { ...(current.printed || {}), ...Object.fromEntries(entries) };
       }
       if (!Object.keys(patch).length) return error('Rien à modifier');

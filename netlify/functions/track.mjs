@@ -32,6 +32,7 @@ export default async (req, context) => {
       history: (o.history || []).map((h) => ({ status: h.status, at: h.at })),
       firstName: String(o.customer?.name || '').split(' ')[0],
       items: o.items.map((it) => ({ name: it.name, qty: it.qty, variant: it.variantName || null, personalization: it.personalization || null })),
+      keychains: o.keychainNames?.length || (o.keychainName ? 1 : 0),
       total: o.total,
       shipping: o.shipping,
     } });

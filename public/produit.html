@@ -55,6 +55,17 @@
 .qty input{width:44px;border:0;text-align:center;padding:0;font-weight:700;background:transparent;box-shadow:none}
 .buy .total{font-weight:900;font-size:1.6rem;color:var(--g2);margin-left:auto}
 .buy .btn{flex:1 1 200px;text-align:center}
+.offers{display:grid;gap:10px}
+.offer{display:grid;grid-template-columns:1fr auto;gap:2px 10px;text-align:left;border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:16px;padding:12px 14px;cursor:pointer;font:inherit}
+.offer[aria-checked="true"]{border-color:var(--tn);background:var(--card);box-shadow:0 0 0 3px var(--ring)}
+.offer .o-name{font-weight:800}.offer .o-price{font-weight:900;color:var(--tn);font-size:1.15rem;grid-row:span 2;align-self:center}
+.offer .o-sub{font-size:.8rem;color:var(--mut)}.offer .o-save{grid-column:1/-1;font-size:.78rem;font-weight:800;color:var(--ok)}
+.packbox{background:var(--bg);border-radius:16px;padding:14px;margin-bottom:12px}
+.pk-title{font-weight:800}.pk-price{font-size:.88rem;color:var(--mut)}
+.pk-dots{display:flex;gap:8px;margin:10px 0}.pk-dots i{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);background:var(--card)}
+.pk-dots i.done{background:var(--tn);border-color:var(--tn)}.pk-dots i.cur{border-color:var(--tn);box-shadow:0 0 0 3px var(--ring)}
+.packbanner{display:inline-block;margin:8px 0 0;font-size:.85rem;font-weight:700;color:var(--tn);text-decoration:none;border:1.5px dashed var(--tn);border-radius:99px;padding:4px 12px}
+.was{color:var(--mut);font-size:.9rem;font-weight:500}
 /* ---------- phones & tablets: the counter stays visible while choosing ---------- */
 .mbar{display:none}
 @media(max-width:879px){
@@ -100,6 +111,7 @@
       <span class="tag">Atelier de personnalisation</span> <span class="tag made-in" style="background:#FFE4E6;color:#B5000F"><img class="flag" src="/img/flag-tn.svg" alt=""> Fabriqué en Tunisie</span>
       <h1 id="pname" style="margin-top:10px">Compteur de score</h1>
       <p class="note" id="ptag" style="margin:0"></p>
+      <a class="packbanner" href="#offerStep" id="packBanner"></a>
 
       <div class="step">
         <h2 class="step-title"><b>1</b> Choisissez une pièce, puis sa couleur</h2>
@@ -126,7 +138,14 @@
         <p style="margin:12px 0 0"><button class="share" id="random" type="button">🎲 Surprenez-moi</button> · <button class="share" id="share" type="button">🔗 Copier le lien de ma création</button></p>
       </div>
 
-      <div class="step">
+      <div class="step" id="offerStep">
+        <h2 class="step-title"><b>5</b> Choisissez votre offre</h2>
+        <div class="offers" id="offers" role="radiogroup" aria-label="Offre"></div>
+        <p class="note" id="shipNote" style="margin:12px 0 0"></p>
+      </div>
+
+      <div class="step" id="buyStep">
+        <div id="soloBuy">
         <div class="buy">
           <div class="qty"><button type="button" id="minus" aria-label="Moins">−</button><input id="qty" type="number" min="1" max="20" value="1" inputmode="numeric" aria-label="Quantité"><button type="button" id="plus" aria-label="Plus">+</button></div>
           <span class="total" id="total">25 DT</span>
@@ -135,7 +154,15 @@
           <button class="btn p" id="add" type="button">Ajouter au panier</button>
           <button class="btn s" id="buyNow" type="button">Commander maintenant</button>
         </div>
-        <p class="note" style="margin:12px 0 0">🎁 Porte-clé personnalisé offert · 🚚 Livraison dans les 24 gouvernorats · <img class="flag" src="/img/flag-tn.svg" alt=""> Imprimé en Tunisie</p>
+        <p class="note" id="soloHint" style="margin:10px 0 0;color:var(--ok);font-weight:700"></p>
+        </div>
+        <div id="packBuy" hidden>
+          <div class="packbox"><div class="pk-title" id="pkTitle"></div><div class="pk-dots" id="pkDots"></div><div class="pk-price" id="pkPrice"></div></div>
+          <div class="buy"><button class="btn p" id="pkAdd" type="button"></button></div>
+          <div class="buy" style="margin-top:10px"><button class="btn s" id="pkSame" type="button" hidden></button></div>
+          <p class="note" id="pkHelp" style="margin:10px 0 0"></p>
+        </div>
+        <p class="note" style="margin:12px 0 0">🎁 1 porte-clé personnalisé offert par compteur · 🚚 Livraison dans les 24 gouvernorats · <img class="flag" src="/img/flag-tn.svg" alt=""> Imprimé en Tunisie</p>
       </div>
     </div>
   </div>
@@ -144,8 +171,9 @@
 <div class="mbar" aria-label="Commande rapide"><span class="t" id="mtotal">25 DT</span><button class="btn p" id="madd" type="button">Ajouter au panier</button></div>
 
 <script type="module">
-import { getProduct, COLORS, getColor, FONTS, getFont } from '/js/products.js';
-import { renderPreview, paint, addToCart, money, esc, toast } from '/js/common.js';
+import { getProduct, COLORS, getColor, FONTS, getFont, SHIPPING } from '/js/products.js';
+import { PACKS, getPack, bundleCounters } from '/js/pricing.js';
+import { renderPreview, paint, addToCart, getCart, money, esc, toast } from '/js/common.js';
 
 const params = new URLSearchParams(location.search);
 const product = getProduct(params.get('id') || 'compteur-score');
@@ -160,10 +188,12 @@ const colors = Object.fromEntries(product.parts.map((p) => [p.id, p.default]));
 let font = getFont(params.get('f'))?.available ? params.get('f') : product.defaultFont;
 const availFonts = FONTS.filter((f) => f.available);
 let active = product.parts[0].id;
+let offer = getPack(params.get('pack'))?.id || 'solo';   // 'solo' or a pack id from /js/pricing.js
 
 document.title = `Personnaliser — ${product.name} — SETPOINT`;
 document.getElementById('pname').textContent = product.name;
 document.getElementById('ptag').textContent = product.tagline;
+document.getElementById('packBanner').textContent = `📦 ${PACKS.map((p) => `${p.name} ${money(p.price)}`).join(' · ')} · livraison offerte dès ${money(SHIPPING.freeFrom)}`;
 
 const avail = COLORS.filter((c) => c.available);
 const isLight = (hex) => { const n = parseInt(hex.slice(1), 16); return ((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000 > 160; };
@@ -208,7 +238,7 @@ function render() {
     <button type="button" class="font-btn" role="radio" data-font="${f.id}" aria-checked="${f.id === font}">
       <span class="smp" style="font-family:'${f.family}',system-ui;font-weight:${f.weight}">15 30 AD</span><span class="fn">${esc(f.name)}</span></button>`).join('');
 
-  history.replaceState(null, '', `?id=${product.id}&c=${product.parts.map((p) => colors[p.id]).join('.')}&f=${font}`);
+  history.replaceState(null, '', `?id=${product.id}&c=${product.parts.map((p) => colors[p.id]).join('.')}&f=${font}${offer !== 'solo' ? '&pack=' + offer : ''}`);
   updateTotal();
 }
 
@@ -247,7 +277,38 @@ document.getElementById('share').addEventListener('click', async () => {
 
 const qty = document.getElementById('qty');
 const getQty = () => Math.min(20, Math.max(1, parseInt(qty.value) || 1));
-function updateTotal() { const t = money(product.price * getQty()); document.getElementById('total').textContent = t; document.getElementById('mtotal').textContent = t; }
+const countersInCart = () => getCart().filter((it) => it.productId === product.id).reduce((n, it) => n + it.qty, 0);
+const byId = (id) => document.getElementById(id);
+
+// Offers (solo / packs) + the buy box. Two or more counters always get the pack price in the cart, so the
+// solo box shows the bundled price too, and "pack" mode simply guides the customer through designing N counters.
+function updateTotal() {
+  const unit = product.price, from = SHIPPING.freeFrom;
+  byId('shipNote').textContent = `🚚 Livraison ${money(SHIPPING.price)}, offerte dès ${money(from)} d’achats. Chaque compteur est livré avec un porte-clé personnalisé offert (les prénoms se donnent dans le panier).`;
+  byId('offers').innerHTML = [{ id: 'solo', name: '1 compteur', price: unit, sub: `1 porte-clé offert · + ${money(SHIPPING.price)} de livraison` },
+    ...PACKS.map((p) => ({ id: p.id, name: p.name, price: p.price, sub: `${p.size} compteurs + ${p.size} porte-clés offerts · ${money(p.price / p.size)} la pièce`, save: p.size * unit - p.price }))]
+    .map((o) => `<button type="button" class="offer" role="radio" data-offer="${o.id}" aria-checked="${o.id === offer}">
+      <span class="o-name">${esc(o.name)}</span><span class="o-price">${money(o.price)}</span><span class="o-sub">${esc(o.sub)}</span>${o.save ? `<span class="o-save">Économisez ${money(o.save)}</span>` : ''}</button>`).join('');
+
+  const solo = offer === 'solo';
+  byId('soloBuy').hidden = !solo; byId('packBuy').hidden = solo;
+  if (solo) {
+    const b = bundleCounters(getQty()), price = money(b.total);
+    byId('total').innerHTML = b.total < b.list ? `${price} <s class="was">${money(b.list)}</s>` : price;
+    byId('soloHint').textContent = [b.packs.length ? `📦 ${b.packs.map((p) => (p.count > 1 ? p.count + ' × ' : '') + p.name).join(' + ')} appliqué` : '', b.total >= from ? '🚚 livraison offerte' : ''].filter(Boolean).join(' · ');
+    byId('mtotal').textContent = price; byId('madd').textContent = 'Ajouter au panier';
+    return;
+  }
+  const p = getPack(offer), have = countersInCart(), done = have % p.size, remaining = p.size - done;
+  byId('pkTitle').textContent = `${p.name} · compteur ${done + 1} sur ${p.size}`;
+  byId('pkDots').innerHTML = Array.from({ length: p.size }, (_, i) => `<i class="${i < done ? 'done' : i === done ? 'cur' : ''}"></i>`).join('');
+  byId('pkPrice').textContent = `${money(p.price)} pour ${p.size} compteurs et ${p.size} porte-clés offerts${p.price >= from ? ' · livraison offerte' : ''}`;
+  byId('pkAdd').textContent = remaining === 1 ? `Ajouter le dernier compteur et voir le panier` : `Ajouter ce compteur (${done + 1}/${p.size})`;
+  byId('pkSame').hidden = remaining < 2; byId('pkSame').textContent = `Prendre ${remaining} compteurs identiques`;
+  byId('pkHelp').textContent = done ? `Dans votre panier : ${have} compteur${have > 1 ? 's' : ''}. Il en manque ${remaining} pour compléter le pack.`
+    : 'Créez le premier compteur ci-dessus, ajoutez-le, puis changez les couleurs pour le suivant.';
+  byId('mtotal').textContent = money(p.price); byId('madd').textContent = `Ajouter (${done + 1}/${p.size})`;
+}
 qty.addEventListener('input', updateTotal);
 qty.addEventListener('blur', () => { qty.value = getQty(); updateTotal(); });
 document.getElementById('minus').onclick = () => { qty.value = Math.max(1, getQty() - 1); updateTotal(); };
@@ -255,7 +316,21 @@ document.getElementById('plus').onclick = () => { qty.value = Math.min(20, getQt
 
 const add = () => addToCart({ productId: product.id, qty: getQty(), colors: { ...colors }, font });
 document.getElementById('add').onclick = () => { add(); toast('Ajouté au panier ✓ — vous pouvez créer un autre modèle'); };
-document.getElementById('madd').onclick = () => document.getElementById('add').click();
+document.getElementById('madd').onclick = () => document.getElementById(offer === 'solo' ? 'add' : 'pkAdd').click();
+document.getElementById('offers').addEventListener('click', (e) => { const b = e.target.closest('[data-offer]'); if (b) { offer = b.dataset.offer; render(); } });
+const goToCart = (msg) => { toast(msg); setTimeout(() => { location.href = '/panier'; }, 600); };
+document.getElementById('pkAdd').onclick = () => {
+  const p = getPack(offer);
+  addToCart({ productId: product.id, qty: 1, colors: { ...colors }, font });
+  const done = countersInCart() % p.size;
+  if (done === 0) goToCart(`${p.name} complet ✓`);
+  else { toast(`Compteur ${done} sur ${p.size} ajouté : créez le suivant (ou gardez le même)`); updateTotal(); }
+};
+document.getElementById('pkSame').onclick = () => {
+  const p = getPack(offer), remaining = p.size - (countersInCart() % p.size);
+  addToCart({ productId: product.id, qty: remaining, colors: { ...colors }, font });
+  goToCart(`${p.name} complet ✓`);
+};
 document.getElementById('buyNow').onclick = () => { add(); location.href = '/panier'; };
 
 render();

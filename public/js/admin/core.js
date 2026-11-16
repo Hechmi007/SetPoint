@@ -33,7 +33,8 @@ export function itemDetails(it) {
   const refs = `<span class="mono">${esc(it.variantRef || it.productRef || '')}</span>`;
   if (isCustom(it)) {
     return `${refs}${Object.values(it.colors).map((c) => `<div class="cnt"><i style="background:${c.hex}"></i>${esc(c.part)} : <strong>&nbsp;${esc(c.name)}</strong></div>`).join('')}
-      ${it.font ? `<div class="cnt">🔤 Police : <strong>&nbsp;${esc(it.font.name)}</strong>&nbsp;<span class="note">(${esc(it.font.family)})</span></div>` : ''}`;
+      ${it.font ? `<div class="cnt">🔤 Police : <strong>&nbsp;${esc(it.font.name)}</strong>&nbsp;<span class="note">(${esc(it.font.family)})</span></div>` : ''}
+      ${it.keychains?.length ? `<div class="cnt">🎁 Porte-clés : <strong>&nbsp;${esc(it.keychains.join(', '))}</strong></div>` : ''}`;
   }
   return `${refs}${it.variantName ? `<div class="cnt">Variante : <strong>&nbsp;${esc(it.variantName)}</strong></div>` : ''}
     ${it.personalization ? `<div class="cnt">✏️ Personnalisation : <strong>&nbsp;« ${esc(it.personalization)} »</strong></div>` : ''}`;
@@ -42,7 +43,7 @@ export function itemDetails(it) {
 /**
  * Every physical piece to print for an order. Keys match order.printed:
  *   "<itemIndex>:<partId>" for each colored part of a counter, "<itemIndex>:item" for a catalog product,
- *   "gift" for the free name keychain.
+ *   "gift:<n>" for each free name keychain (one per counter), plain "gift" on orders placed before that change.
  */
 export function orderPieces(o) {
   const out = [];
@@ -60,8 +61,11 @@ export function orderPieces(o) {
         extra: it.personalization ? `« ${it.personalization} »` : '' });
     }
   });
-  out.push({ key: 'gift', group: 'gift', label: 'Porte-clé prénom offert', qty: 1,
-    extra: o.keychainName ? `« ${o.keychainName} »` : 'prénom non précisé' });
+  if (o.keychainNames?.length) {
+    o.keychainNames.forEach((n, k) => out.push({ key: `gift:${k}`, group: 'gift', label: 'Porte-clé prénom offert', qty: 1, extra: n ? `« ${n} »` : 'prénom non précisé' }));
+  } else {
+    out.push({ key: 'gift', group: 'gift', label: 'Porte-clé prénom offert', qty: 1, extra: o.keychainName ? `« ${o.keychainName} »` : 'prénom non précisé' });
+  }
   return out.map((p) => ({ ...p, done: !!o.printed?.[p.key] }));
 }
 export const remainingPieces = (o) => orderPieces(o).filter((p) => !p.done).reduce((n, p) => n + p.qty, 0);

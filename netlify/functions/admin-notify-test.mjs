@@ -8,7 +8,7 @@ export default async (req) => {
   if (req.method !== 'POST') return error('Méthode non autorisée', 405);
   const on = channels();
   const sample = {
-    ref: 'SP-TEST-0000', total: 33, shipping: { label: 'Livraison', price: 8 }, keychainName: 'Test',
+    ref: 'SP-TEST-0000', total: 33, shipping: { label: 'Livraison', price: 8 }, keychainNames: ['Test'], keychainName: 'Test',
     customer: { name: 'Client Test', phone: process.env.OWNER_WHATSAPP || '', governorate: 'Tunis', address: 'Adresse de test', notes: 'Ceci est un test.' },
     items: [{ name: 'Compteur de score', qty: 1, unitPrice: 25, productRef: 'SP-CS-001', font: { name: 'Sport' },
       colors: { body: { part: 'Corps', name: 'Noir' }, writing: { part: 'Écriture', name: 'Gris' } } }],

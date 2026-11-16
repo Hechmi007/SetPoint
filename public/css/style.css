@@ -101,3 +101,21 @@ footer .tn-line{margin:6px 0 14px}
 footer .tn-line .ar{font-size:1.1rem;margin-left:6px}
 .flag{display:inline-block;width:1.35em;height:.9em;vertical-align:-.08em;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.08)}
 footer .flag{box-shadow:0 0 0 1.5px #fff}
+
+/* ---------- packs ---------- */
+.packs{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));margin-top:6px}
+.pack{position:relative;background:var(--bg);border:2px solid var(--line);border-radius:22px;padding:24px 22px 22px;display:flex;flex-direction:column;gap:6px;text-decoration:none;color:inherit;transition:transform .2s,border-color .2s}
+.pack:hover{transform:translateY(-4px);border-color:var(--tn)}
+.pack.best{border-color:var(--tn);background:var(--card);box-shadow:var(--sh)}
+.pack .ribbon{position:absolute;top:-12px;right:18px;background:var(--tn);color:#fff;border-radius:99px;padding:3px 12px;font-size:.75rem;font-weight:800}
+.pack h3{font-size:1.25rem;margin:0}
+.pack .pp{font-size:2.1rem;font-weight:900;color:var(--tn);line-height:1.1}
+.pack .pp small{font-size:.9rem;font-weight:700;color:var(--mut)}
+.pack .was{color:var(--mut);text-decoration:line-through;font-size:.95rem}
+.pack ul{list-style:none;margin:8px 0 14px;padding:0;font-size:.92rem;color:var(--mut)}
+.pack ul li:before{content:"✓ ";color:var(--tn);font-weight:900}
+.pack .btn{margin-top:auto;text-align:center}
+
+/* small phones: keep the whole header on one line (logo + Boutique + Suivi + Panier) */
+@media(max-width:420px){.nav{padding-left:14px;padding-right:14px}.nav nav{gap:11px}.nav nav a{font-size:.84rem}.logo{letter-spacing:.07em;font-size:.92rem;gap:8px}.logo img{width:26px;height:26px}}
+@media(max-width:340px){.nav nav a:first-child:not(.cart-link){display:none}}

@@ -12,6 +12,10 @@
 // stored on the order (order.notifications) and shown in the admin.
 
 const env = (k) => (process.env[k] || '').trim();
+/** 4.5 → "4,5 DT" */
+const dt = (n) => `${String(+Number(n).toFixed(2)).replace('.', ',')} DT`;
+/** Keychain names of an order, one per counter (older orders had a single name). */
+const keychainsOf = (o) => (o.keychainNames?.length ? o.keychainNames : o.keychainName ? [o.keychainName] : []);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 /** Tunisian numbers are stored as typed ("20 123 456"); WhatsApp wants 21620123456. */
@@ -61,18 +65,20 @@ function emailHtml(o, siteUrl) {
   return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:auto;color:#1F1A18">
   <div style="background:#E70013;color:#fff;padding:18px 22px;border-radius:14px 14px 0 0">
     <div style="font-size:13px;letter-spacing:2px">SETPOINT · NOUVELLE COMMANDE</div>
-    <div style="font-size:26px;font-weight:900;margin-top:4px">${esc(o.ref)} — ${esc(o.total)} DT</div>
+    <div style="font-size:26px;font-weight:900;margin-top:4px">${esc(o.ref)} — ${esc(dt(o.total))}</div>
   </div>
   <div style="border:1px solid #EBDFD0;border-top:0;padding:20px 22px;border-radius:0 0 14px 14px">
     <table style="border-collapse:collapse;font-size:15px">${row('Client', esc(o.customer.name))}${row('Téléphone', `<a href="tel:${esc(o.customer.phone)}">${esc(o.customer.phone)}</a>`)}
       ${row('Gouvernorat', esc(o.customer.governorate))}${row('Adresse', esc(o.customer.address))}${o.customer.notes ? row('Notes', esc(o.customer.notes)) : ''}
-      ${row('Porte-clé offert', esc(o.keychainName || '—'))}</table>
+      ${row(`Porte-clés offerts (${keychainsOf(o).length})`, esc(keychainsOf(o).join(', ') || '—'))}</table>
     <h3 style="margin:20px 0 8px;font-size:16px">Articles</h3>
     ${o.items.map(itemLine).map((l) => `<div style="padding:8px 0;border-top:1px solid #EBDFD0;font-size:15px">
-      <strong>${esc(l.title)}</strong> <span style="color:#6E655D;font-size:12px">${esc(l.ref)}</span><span style="float:right">${esc(l.amount)} DT</span>
+      <strong>${esc(l.title)}</strong> <span style="color:#6E655D;font-size:12px">${esc(l.ref)}</span><span style="float:right">${esc(dt(l.amount))}</span>
       ${l.detail ? `<div style="color:#6E655D;font-size:13px">${esc(l.detail)}</div>` : ''}</div>`).join('')}
-    <div style="padding:8px 0;border-top:1px solid #EBDFD0;font-size:15px">Livraison<span style="float:right">${esc(o.shipping?.price ?? '—')} DT</span></div>
-    <div style="padding:10px 0;border-top:2px solid #1F1A18;font-size:18px;font-weight:900">Total<span style="float:right">${esc(o.total)} DT</span></div>
+    ${(o.packs || []).map((p) => `<div style="padding:8px 0;border-top:1px solid #EBDFD0;font-size:15px;color:#135c33">📦 ${esc(p.name)}${p.count > 1 ? ' × ' + p.count : ''}<span style="float:right">−${esc(dt(p.saving * p.count))}</span></div>`).join('')}
+    ${o.coupon ? `<div style="padding:8px 0;border-top:1px solid #EBDFD0;font-size:15px;color:#135c33">🎟️ Code <strong>${esc(o.coupon.code)}</strong>${o.coupon.label ? ` (${esc(o.coupon.label)})` : ''}<span style="float:right">−${esc(dt(o.coupon.discount))}</span></div>` : ''}
+    <div style="padding:8px 0;border-top:1px solid #EBDFD0;font-size:15px">Livraison<span style="float:right">${o.shipping?.price ? esc(dt(o.shipping.price)) : 'Offerte'}</span></div>
+    <div style="padding:10px 0;border-top:2px solid #1F1A18;font-size:18px;font-weight:900">Total<span style="float:right">${esc(dt(o.total))}</span></div>
     <p style="margin:20px 0 0">
       ${phone ? `<a href="https://wa.me/${phone}?text=${encodeURIComponent(confirm)}" style="background:#E70013;color:#fff;text-decoration:none;padding:12px 20px;border-radius:99px;font-weight:700;display:inline-block;margin:0 8px 8px 0">Confirmer au client sur WhatsApp</a>` : ''}
       <a href="tel:${esc(o.customer.phone)}" style="border:2px solid #1F1A18;color:#1F1A18;text-decoration:none;padding:10px 20px;border-radius:99px;font-weight:700;display:inline-block">Appeler</a></p>
@@ -87,21 +93,23 @@ async function sendEmail(o, siteUrl) {
     body: JSON.stringify({
       from: env('NOTIFY_FROM') || 'SETPOINT <onboarding@resend.dev>',
       to: env('NOTIFY_EMAIL').split(',').map((s) => s.trim()).filter(Boolean).slice(0, 5),
-      subject: `🎾 Nouvelle commande ${o.ref} — ${o.total} DT — ${o.customer.name}`,
+      subject: `🎾 Nouvelle commande ${o.ref} — ${dt(o.total)} — ${o.customer.name}${o.coupon ? ` — code ${o.coupon.code}` : ''}`,
       html: emailHtml(o, siteUrl),
     }),
   });
 }
 
 // ---------- Telegram to the owner (official Bot API) ----------
-const confirmText = (o, site) => `Bonjour ${o.customer.name}, ici SETPOINT 🎾 Nous confirmons votre commande ${o.ref} (${o.total} DT). Suivez-la ici : ${site}/suivi?ref=${o.ref}`;
+const confirmText = (o, site) => `Bonjour ${o.customer.name}, ici SETPOINT 🎾 Nous confirmons votre commande ${o.ref} (${dt(o.total)}). Suivez-la ici : ${site}/suivi?ref=${o.ref}`;
 
 async function sendTelegram(o, siteUrl) {
   const phone = intlPhone(o.customer.phone);
   const lines = o.items.map(itemLine).map((l) => `• <b>${esc(l.title)}</b>${l.detail ? `\n   ${esc(l.detail)}` : ''}`);
-  const text = [`🎾 <b>Nouvelle commande ${esc(o.ref)}</b>`, `<b>${esc(o.total)} DT</b> (livraison incluse)`, '',
+  const text = [`🎾 <b>Nouvelle commande ${esc(o.ref)}</b>`, `<b>${esc(dt(o.total))}</b> ${o.shipping?.price ? '(livraison incluse)' : '(livraison offerte)'}`,
+    ...(o.packs || []).map((p) => `📦 ${esc(p.name)}${p.count > 1 ? ' × ' + p.count : ''}`),
+    ...(o.coupon ? [`🎟️ Code <b>${esc(o.coupon.code)}</b>${o.coupon.label ? ` (${esc(o.coupon.label)})` : ''} : −${esc(dt(o.coupon.discount))}`] : []), '',
     `👤 ${esc(o.customer.name)}`, `📞 ${esc(o.customer.phone)}`, `📍 ${esc(o.customer.governorate)} — ${esc(o.customer.address)}`,
-    o.customer.notes ? `📝 ${esc(o.customer.notes)}` : null, '', ...lines, `🎁 Porte-clé : ${esc(o.keychainName || '—')}`]
+    o.customer.notes ? `📝 ${esc(o.customer.notes)}` : null, '', ...lines, `🎁 Porte-clés (${keychainsOf(o).length}) : ${esc(keychainsOf(o).join(', ') || '—')}`]
     .filter((l) => l !== null).join('\n').slice(0, 3900);
   const buttons = [];
   if (phone) buttons.push([{ text: '✅ Confirmer au client sur WhatsApp', url: `https://wa.me/${phone}?text=${encodeURIComponent(confirmText(o, siteUrl))}` }]);
@@ -115,7 +123,7 @@ async function sendTelegram(o, siteUrl) {
 
 // ---------- WhatsApp to the owner ----------
 // CallMeBot is a free third-party relay, so the message carries only a short summary (no address, no phone).
-const ownerText = (o) => `🎾 Nouvelle commande SETPOINT\n${o.ref} · ${o.total} DT\n${String(o.customer.name).split(' ')[0]} (${o.customer.governorate})\n`
+const ownerText = (o) => `🎾 Nouvelle commande SETPOINT\n${o.ref} · ${dt(o.total)}${o.coupon ? ` · code ${o.coupon.code}` : ''}\n${String(o.customer.name).split(' ')[0]} (${o.customer.governorate})\n`
   + o.items.map((it) => `• ${it.qty} × ${it.name}${it.variantName ? ` (${it.variantName})` : ''}`).join('\n');
 
 async function sendOwnerCallMeBot(o) {

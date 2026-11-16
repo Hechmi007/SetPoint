@@ -35,6 +35,7 @@ const PAGE = `<!DOCTYPE html>
     <a href="#commandes" data-tab="commandes">📦 Commandes <span class="tb" id="tbOrders"></span></a>
     <a href="#production" data-tab="production">🖨️ Production <span class="tb" id="tbProd"></span></a>
     <a href="#produits" data-tab="produits">🏷️ Produits</a>
+    <a href="#promos" data-tab="promos">🎟️ Codes promo</a>
     <span class="tabs-right"><span class="note" id="updated"></span><button class="btn s sm" id="refresh">↻</button></span>
   </nav>
 
@@ -66,10 +67,18 @@ const PAGE = `<!DOCTYPE html>
       <p class="note" style="margin-top:-8px">Les produits publiés apparaissent dans la boutique. Les brouillons ne sont visibles qu’ici (bouton Aperçu).</p>
       <div class="pgrid" id="pgrid"></div>
     </section>
+
+    <section id="view-promos" class="view" hidden>
+      <div class="top"><h1>Codes promo</h1><button class="btn p sm" id="newPromo" type="button">+ Nouveau code</button></div>
+      <p class="note" style="margin-top:-8px">Donnez un code (ou son lien) à un coach, un club ou une marque : leurs clients obtiennent la réduction, et vous voyez ce que chaque code rapporte.</p>
+      <div class="stats" id="promoStats"></div>
+      <div class="pgrid cpgrid" id="promoList" style="margin-top:16px"></div>
+    </section>
   </main>
 </div>
 
 <dialog id="drawer"><div class="dw" id="dw"></div></dialog>
+<dialog id="cpDrawer"><form class="dw" id="cpForm" novalidate></form></dialog>
 <dialog id="editor" class="editor"><form id="edForm" class="ed" novalidate></form></dialog>
 
 <script type="module" src="/js/admin.js"></script>

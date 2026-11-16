@@ -5,6 +5,7 @@ import { toast } from '/js/common.js';
 import { $, api, session, esc, money, statusLabel, statusSelect, fmtDate, itemThumb, itemDetails, remainingPieces } from '/js/admin/core.js';
 import * as production from '/js/admin/production.js';
 import * as products from '/js/admin/products.js';
+import * as promos from '/js/admin/promos.js';
 
 // The dashboard lives at /a/<ADMIN_PATH>; the same secret must accompany the login.
 const adminKey = decodeURIComponent(location.pathname.split('/')[2] || '');
@@ -53,11 +54,12 @@ async function load() {
     renderAll();
   } catch (ex) { toast(ex.message); }
 }
-$('refresh').onclick = () => { load(); if (currentTab() === 'produits') products.load(); };
+$('refresh').onclick = () => { load(); if (currentTab() === 'produits') products.load(); if (currentTab() === 'promos') promos.load(); };
 
 function renderAll() {
   renderOrders();
   production.render(ctx);
+  promos.render(ctx);
   const open = state.orders.filter((o) => ['new', 'confirmed', 'production'].includes(o.status));
   $('tbOrders').textContent = state.orders.filter((o) => o.status === 'new').length || '';
   $('tbProd').textContent = open.reduce((n, o) => n + remainingPieces(o), 0) || '';
@@ -66,10 +68,11 @@ function renderAll() {
 // ---------- tabs ----------
 const currentTab = () => (location.hash.slice(1) || 'commandes');
 function showTab() {
-  const tab = ['commandes', 'production', 'produits'].includes(currentTab()) ? currentTab() : 'commandes';
+  const tab = ['commandes', 'production', 'produits', 'promos'].includes(currentTab()) ? currentTab() : 'commandes';
   document.querySelectorAll('.view').forEach((v) => { v.hidden = v.id !== `view-${tab}`; });
   document.querySelectorAll('#tabs [data-tab]').forEach((a) => a.setAttribute('aria-current', a.dataset.tab === tab ? 'page' : 'false'));
   if (tab === 'produits') products.load();
+  if (tab === 'promos') promos.load();
 }
 addEventListener('hashchange', showTab);
 
@@ -105,7 +108,7 @@ function renderList() {
       <div><div class="ref">${esc(o.ref)}</div><div class="sub">${fmtDate(o.createdAt)}</div></div>
       <div><div><strong>${esc(o.customer.name)}</strong></div><div class="sub">${esc(o.customer.phone)} · ${esc(o.customer.governorate)}</div></div>
       <div class="thumbs c-items">${o.items.slice(0, 4).map(() => '<span class="thumb"></span>').join('')}${o.items.length > 4 ? `<span class="more">+${o.items.length - 4}</span>` : ''}</div>
-      <div class="c-total"><strong>${money(o.total)}</strong>${o.shipping?.price === null ? '<div class="sub">+ livraison</div>' : ''}</div>
+      <div class="c-total"><strong>${money(o.total)}</strong>${o.shipping?.price === null ? '<div class="sub">+ livraison</div>' : ''}${o.couponCode ? `<div class="sub">🎟️ ${esc(o.couponCode)}</div>` : ''}${o.packs?.length ? `<div class="sub">📦 ${o.packs.map((p) => esc(p.name) + (p.count > 1 ? ' ×' + p.count : '')).join(' + ')}</div>` : ''}</div>
       <div class="c-total">${o.items.reduce((n, it) => n + it.qty, 0)}</div>
       <div class="c-status">${statusSelect(o)}</div></div>`).join('')
       : '<div class="empty">Aucune commande ici pour le moment.</div>');
@@ -132,16 +135,21 @@ function openDrawer(ref) {
         <strong>${esc(it.name)} × ${it.qty}</strong> <span class="note">(${money(it.unitPrice)}/u)</span>
         ${itemDetails(it)}
       </div></div>`).join('')}
-      <div class="cnt" style="margin-top:8px">🎁 Porte-clé offert : <strong>&nbsp;${esc(o.keychainName || '—')}</strong></div>
+      <div class="cnt" style="margin-top:8px">🎁 ${o.keychainNames?.length || (o.keychainName ? 1 : 0)} porte-clé(s) personnalisé(s) offert(s)${o.keychainNames?.length ? '' : ` : <strong>&nbsp;${esc(o.keychainName || '—')}</strong>`}</div>
       <p style="margin:10px 0 0"><a href="#production" class="note" id="toProd">→ Voir dans la production (${remainingPieces(o)} pièce(s) restante(s))</a></p>
     </div>
+    <div class="card"><h3 style="font-size:1rem">Montant à encaisser</h3><dl class="amounts">
+      <dt>Sous-total</dt><dd>${money(o.subtotal ?? o.items.reduce((s, it) => s + it.unitPrice * it.qty, 0))}</dd>
+      ${(o.packs || []).map((p) => `<dt>📦 ${esc(p.name)}${p.count > 1 ? ' × ' + p.count : ''}</dt><dd class="neg">−${money(Math.round(p.saving * p.count * 100) / 100)}</dd>`).join('')}
+      ${o.coupon ? `<dt>🎟️ ${esc(o.coupon.code)}${o.coupon.label ? ` <span class="note">(${esc(o.coupon.label)})</span>` : ''}</dt><dd class="neg">−${money(o.coupon.discount)}${o.coupon.commission ? `<div class="note">commission ${money(o.coupon.commission)} si livrée</div>` : ''}</dd>` : ''}
+      <dt>Livraison</dt><dd>${o.shipping?.price ? money(o.shipping.price) : esc(o.shipping?.label || '—')}</dd>
+      <dt class="tot">Total</dt><dd class="tot"><strong>${money(o.total)}</strong></dd></dl></div>
     <div class="card"><h3 style="font-size:1rem">Client</h3><dl>
       <dt>Nom</dt><dd>${esc(o.customer.name)}</dd>
       <dt>Téléphone</dt><dd><a href="tel:${esc(o.customer.phone)}">${esc(o.customer.phone)}</a></dd>
       <dt>Gouvernorat</dt><dd>${esc(o.customer.governorate)}</dd>
       <dt>Adresse</dt><dd>${esc(o.customer.address)}</dd>
       <dt>Notes</dt><dd>${esc(o.customer.notes || '—')}</dd>
-      <dt>Total</dt><dd><strong>${money(o.total)}</strong> · livraison ${esc(o.shipping?.label || '')}</dd>
       <dt>Passée le</dt><dd>${new Date(o.createdAt).toLocaleString('fr-FR')}</dd></dl>
       <div class="actions" style="margin-top:14px"><a class="btn p sm" href="${wa}" target="_blank" rel="noopener">WhatsApp</a><a class="btn s sm" href="tel:${esc(o.customer.phone)}">Appeler</a></div>
     </div>
@@ -189,6 +197,7 @@ $('notifyTest').onclick = async () => {
 // ---------- start ----------
 production.init(ctx);
 products.init();
+promos.init(ctx);
 let timer;
 function start() {
   $('login').hidden = true; $('app').hidden = false; $('logout').hidden = false;

@@ -94,3 +94,18 @@ Needs a phone number that is **not** currently used in the WhatsApp or WhatsApp 
 
 Optional: `WHATSAPP_TEMPLATE_ADMIN` = an approved template with 4 variables (reference, total, customer, items)
 sends your own alert through Meta instead of CallMeBot.
+
+## Packs and promo codes
+
+**Packs** (edit in [`public/js/pricing.js`](public/js/pricing.js), `PACKS`): Pack Duo = 2 counters for 45 DT, Pack Équipe = 4 for 85 DT.
+They are automatic: the counters in a cart are grouped into the cheapest combination of packs (2 → Duo, 4 → Équipe, 6 → Équipe + Duo…),
+whether the counters are identical or each designed differently. Delivery (8 DT) is free from 100 DT of goods, counted after pack and promo-code discounts (`SHIPPING.freeFrom` in `public/js/products.js`); the cart shows "plus que X DT pour la livraison offerte".
+Every counter comes with a free personalized keychain: the cart asks for one name per counter (8 counters = 8 names), orders store them in `keychainNames`, and the Production tab lists one keychain to print per name.
+The cart suggests "add 1 counter for X DT more" when a pack is within reach.
+
+**Promo codes** (admin → 🎟️ Codes promo): percentage or fixed amount, optional minimum purchase, usage limit, expiry date,
+"not with packs", and an optional per-delivered-order commission for the coach/club (the table shows what you owe them).
+- A code applies to the goods after pack discounts (never to delivery); discounts are rounded to 0.1 DT.
+- Share a code or its link `https://your-site/?code=SAMI15`: the code is remembered in the visitor's browser and the cart applies it by itself.
+- Prices are always recomputed on the server (`/api/quote` for the cart preview, `/api/orders` for the real order); cancelled orders free a code's usage limit.
+- More than 12 wrong codes from one connection in 15 minutes are blocked (stops code guessing).

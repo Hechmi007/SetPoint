@@ -72,7 +72,7 @@ function fitText(group) {
 }
 
 // ---------- misc ----------
-export const money = (n) => `${n} DT`;
+export const money = (n) => `${String(+Number(n).toFixed(2)).replace('.', ',')} DT`;
 /** Plain text (as typed in the admin) → escaped paragraphs with line breaks. */
 export const paragraphs = (s) => String(s ?? '').split(/\n{2,}/).map((p) => p.trim()).filter(Boolean)
   .map((p) => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`).join('');
@@ -92,5 +92,16 @@ export function revealOnScroll() {
   const io = new IntersectionObserver((es) => es.forEach((x) => { if (x.isIntersecting) { x.target.classList.add('on'); io.unobserve(x.target); } }), { threshold: 0.1 });
   document.querySelectorAll('.rv').forEach((x) => io.observe(x));
 }
+
+// A coach or club shares a link like https://shop/?code=SAMI10 : the code is remembered in this browser and the
+// cart applies it by itself (the server still checks it when the order is placed).
+try {
+  const raw = new URLSearchParams(location.search).get('code');
+  const code = String(raw || '').toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 24);
+  if (code.length >= 3) {
+    localStorage.setItem('setpoint-coupon', code);
+    setTimeout(() => toast(`Code ${code} enregistré : il sera appliqué à votre panier 🎟️`), 500);
+  }
+} catch { /* private mode */ }
 
 updateCartCount();

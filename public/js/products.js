@@ -53,6 +53,8 @@ export const PRODUCTS = [
       { id: 'pinsLeft',  label: 'Curseurs gauche', hint: 'Les marqueurs qui coulissent à gauche', default: 'black' },
       { id: 'pinsRight', label: 'Curseurs droite', hint: 'Les marqueurs qui coulissent à droite', default: 'red' },
     ],
+    // Every counter comes with a free personalized keychain: the customer gives one name per counter.
+    keychain: { maxLength: 20 },
     // Font of the part named in `fontPart` (ids from FONTS below)
     fontPart: 'writing',
     defaultFont: 'comic',
@@ -68,7 +70,8 @@ export const PRODUCTS = [
 ];
 
 // Flat delivery fee for every order, all over Tunisia (DT). The server adds it to the total.
-export const SHIPPING = { price: 8, label: 'Livraison' };
+// `freeFrom`: delivery is free when the goods cost at least this much (after pack and promo-code discounts).
+export const SHIPPING = { price: 8, label: 'Livraison', freeFrom: 100 };
 
 export const GOVERNORATES = [
   'Tunis', 'Ariana', 'Ben Arous', 'La Manouba', 'Nabeul', 'Zaghouan', 'Bizerte', 'Béja', 'Jendouba',
