@@ -111,7 +111,7 @@ async function refreshCatalog() {
     const p = found[it.productId]; if (!p) return false;
     const v = p.variants.length ? p.variants.find((x) => x.id === it.variantId) : null;
     if (p.variants.length && !v?.available) return false;
-    Object.assign(it, { name: p.name, price: v?.price ?? p.price, variantName: v?.name || null, image: v?.image || p.images[0] || '' });
+    Object.assign(it, { name: p.name, price: (v?.price ?? p.price) + (it.personalization && p.personalization?.enabled ? Number(p.personalization.price) || 0 : 0), variantName: v?.name || null, image: v?.image || p.images[0] || '' });
     return true;
   });
   if (JSON.stringify(next) !== JSON.stringify(cart)) saveCart(next);

@@ -121,7 +121,9 @@ if (p.status !== 'published') document.getElementById('banner').innerHTML = '<di
 
 let variant = p.variants.find((v) => v.available) || null;
 let image = variant?.image || p.images[0] || '';
-const price = () => variant?.price ?? p.price;
+// the paid name option adds its fee only once the customer has typed a name
+const nameFee = () => (p.personalization?.enabled && Number(p.personalization.price) && document.getElementById('perso')?.value.trim() ? Number(p.personalization.price) : 0);
+const price = () => (variant?.price ?? p.price) + nameFee();
 
 // ---------- building blocks ----------
 const gallery = () => !p.images.length ? '' : `
@@ -138,7 +140,7 @@ const buybox = () => `
       <div class="variants" id="variants" role="radiogroup" aria-label="${esc(p.variantLabel)}">${p.variants.map((v) => `
         <button type="button" class="vchip ${v.image ? '' : 'txt'}" role="radio" data-v="${esc(v.id)}" aria-checked="${v === variant}" ${v.available ? '' : 'disabled title="Bientôt disponible"'}>
           ${v.image ? `<img src="${esc(v.image)}" alt="" loading="lazy">` : ''}${esc(v.name)}${v.price !== null && v.price !== p.price ? ` <span class="vp">${money(v.price)}</span>` : ''}</button>`).join('')}</div>` : ''}
-    ${p.personalization?.enabled ? `<div class="field perso"><label for="perso">${esc(p.personalization.label)}${p.personalization.required ? '' : ' (facultatif)'}</label>
+    ${p.personalization?.enabled ? `<div class="field perso"><label for="perso">${esc(p.personalization.label)}${p.personalization.required ? '' : ' (facultatif)'}${Number(p.personalization.price) ? ` · +${money(Number(p.personalization.price))}` : ''}</label>
       <input id="perso" maxlength="${p.personalization.maxLength}" placeholder="Ex. Amine"></div>` : ''}
     <div class="buy-row">
       <div class="qty"><button type="button" id="minus" aria-label="Moins">−</button><input id="qty" type="number" min="1" max="20" value="1" inputmode="numeric" aria-label="Quantité"><button type="button" id="plus" aria-label="Plus">+</button></div>
@@ -213,7 +215,7 @@ function add() {
 $('add').onclick = () => { if (add()) toast('Ajouté au panier ✓'); };
 $('madd').onclick = () => $('add').click();
 $('buyNow').onclick = () => { if (add()) location.href = '/panier'; };
-$('perso')?.addEventListener('input', (e) => e.target.classList.remove('invalid'));
+$('perso')?.addEventListener('input', (e) => { e.target.classList.remove('invalid'); refresh(); });
 refresh();
 </script>
 </body>

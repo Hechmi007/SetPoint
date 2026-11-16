@@ -71,6 +71,9 @@ export function cleanProduct(raw, { existingId } = {}) {
 
   const p = raw.personalization || {};
   const maxLength = Math.min(40, Math.max(1, Math.trunc(Number(p.maxLength)) || 15));
+  // optional paid extra: the customer pays `price` more per unit when they write a name (0 = free)
+  const fee = p.price === '' || p.price == null ? 0 : money(p.price);
+  if (fee === null) throw new Invalid('Supplément de personnalisation invalide');
 
   return {
     id, ref, name, price,
@@ -83,11 +86,13 @@ export function cleanProduct(raw, { existingId } = {}) {
     sections: (Array.isArray(raw.sections) ? raw.sections : []).slice(0, 20).map(cleanSection).filter(Boolean),
     variantLabel: line(raw.variantLabel, 40) || 'Modèle',
     variants,
-    personalization: { enabled: bool(p.enabled), label: line(p.label, 80) || 'Prénom à graver', maxLength, required: bool(p.required) },
+    personalization: { enabled: bool(p.enabled), label: line(p.label, 80) || 'Prénom à graver', maxLength, required: bool(p.required), price: fee },
   };
 }
 
 export const unitPrice = (product, variant) => variant?.price ?? product.price;
+/** Extra charged per unit when the customer wrote a name (0 when the product has no paid personalization). */
+export const personalizationFee = (product, text) => (product.personalization?.enabled && text ? Number(product.personalization.price) || 0 : 0);
 
 export async function getCatalogProduct(id, { includeDrafts = false } = {}) {
   if (typeof id !== 'string' || !id) return null;

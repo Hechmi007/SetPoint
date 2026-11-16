@@ -14,7 +14,7 @@ const LAYOUTS = [
 ];
 const SECTIONS = { text: '📝 Texte', features: '⭐ Points forts', image: '🖼️ Image', specs: '📐 Caractéristiques' };
 const blank = () => ({ name: '', ref: '', category: 'Porte-clés', price: '', status: 'draft', tagline: '', description: '', layout: 'classic',
-  images: [], sections: [], variantLabel: 'Couleur', variants: [], personalization: { enabled: false, label: 'Prénom à graver', maxLength: 15, required: false } });
+  images: [], sections: [], variantLabel: 'Couleur', variants: [], personalization: { enabled: false, label: 'Prénom à graver', maxLength: 15, required: false, price: '' } });
 
 export async function load() {
   try {
@@ -30,7 +30,7 @@ function renderList() {
       <div class="prow-top"><span class="mono">${esc(p.ref)}</span>${custom ? '<span class="badge st-confirmed">Personnalisable · intégré</span>'
         : `<span class="badge ${p.status === 'published' ? 'st-delivered' : 'st-cancelled'}">${p.status === 'published' ? 'Publié' : 'Brouillon'}</span>`}</div>
       <h3>${esc(p.name)}</h3>
-      <div class="note">${money(p.price)}${custom ? '' : ` · ${p.variants.length} variante(s)${p.personalization?.enabled ? ' · personnalisable' : ''}`}</div>
+      <div class="note">${money(p.price)}${custom ? '' : ` · ${p.variants.length} variante(s)${p.personalization?.enabled ? ` · personnalisable${p.personalization.price ? ' (+' + money(p.personalization.price) + ')' : ''}` : ''}`}</div>
       <div class="pactions">${custom ? `<a class="btn s sm" href="/produit?id=${esc(p.id)}" target="_blank">Voir</a><span class="note">Couleurs et prix : fichier products.js</span>`
         : `<button type="button" class="btn p sm" data-edit="${esc(p.id)}">Modifier</button><button type="button" class="btn s sm" data-preview="${esc(p.id)}">Aperçu</button><button type="button" class="btn s sm danger" data-del="${esc(p.id)}">Supprimer</button>`}</div>
     </div></article>`;
@@ -237,6 +237,7 @@ function draw() {
       ${p.personalization.enabled ? `<div class="form-grid" style="margin-top:12px">
         <div class="field"><label>Question posée</label><input data-k="personalization.label" value="${v(p.personalization.label)}" maxlength="80"></div>
         <div class="field"><label>Nombre de caractères max</label><input data-k="personalization.maxLength" value="${v(p.personalization.maxLength)}" inputmode="numeric"></div>
+        <div class="field"><label>Supplément quand le client écrit un prénom (DT)</label><input data-k="personalization.price" value="${v(p.personalization.price || '')}" inputmode="decimal" placeholder="0 = gratuit"></div>
         <label class="chk-inline full"><input type="checkbox" data-k="personalization.required" ${p.personalization.required ? 'checked' : ''}> Obligatoire</label></div>` : ''}
     </section>
 

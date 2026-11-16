@@ -37,7 +37,7 @@ export function itemDetails(it) {
       ${it.keychains?.length ? `<div class="cnt">🎁 Porte-clés : <strong>&nbsp;${esc(it.keychains.join(', '))}</strong></div>` : ''}`;
   }
   return `${refs}${it.variantName ? `<div class="cnt">Variante : <strong>&nbsp;${esc(it.variantName)}</strong></div>` : ''}
-    ${it.personalization ? `<div class="cnt">✏️ Personnalisation : <strong>&nbsp;« ${esc(it.personalization)} »</strong></div>` : ''}`;
+    ${it.personalization ? `<div class="cnt">✏️ Personnalisation : <strong>&nbsp;« ${esc(it.personalization)} »</strong>${it.personalizationFee ? `&nbsp;<span class="note">(+${money(it.personalizationFee)})</span>` : ''}</div>` : ''}`;
 }
 
 /**

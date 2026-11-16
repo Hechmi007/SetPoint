@@ -2,7 +2,7 @@
 // Used by /api/orders (the real order) and /api/quote (the cart preview), so both always agree.
 import { getProduct, getColor, getFont } from '../../public/js/products.js';
 import { computePricing, describeCoupon } from '../../public/js/pricing.js';
-import { getCatalogProduct, unitPrice } from './catalog.mjs';
+import { getCatalogProduct, unitPrice, personalizationFee } from './catalog.mjs';
 import { classifyDbError } from './db.mjs';
 import { checkCoupon, normalizeCode } from './coupons.mjs';
 
@@ -38,10 +38,11 @@ export async function buildItems(rawItems, { requireKeychains = true, legacyKeyc
         personalization = clean(raw.personalization, cat.personalization.maxLength);
         if (cat.personalization.required && !personalization) throw new CartError(`${cat.personalization.label} manquant pour « ${cat.name} »`);
       }
+      const fee = personalizationFee(cat, personalization);
       items.push({
         kind: 'catalog', productId: cat.id, productRef: cat.ref, name: cat.name,
         variantId: variant?.id ?? null, variantName: variant?.name ?? null, variantRef: variant?.ref ?? null,
-        personalization, image: variant?.image || cat.images[0] || '', unitPrice: unitPrice(cat, variant), qty,
+        personalization, personalizationFee: fee, image: variant?.image || cat.images[0] || '', unitPrice: Math.round((unitPrice(cat, variant) + fee) * 1000) / 1000, qty,
       });
       continue;
     }
