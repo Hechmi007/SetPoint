@@ -28,6 +28,7 @@ export async function buildItems(rawItems, { requireKeychains = true, legacyKeyc
       try { cat = await getCatalogProduct(String(raw?.productId ?? '').slice(0, 60)); }
       catch (e) { console.error('catalog lookup', e); const code = classifyDbError(e); throw new CartError(`Impossible de vérifier le panier (code : ${code}).`, 500, { code }); }
       if (!cat) throw new CartError('Un produit de votre panier n’est plus disponible');
+      if (cat.audience === 'clubs') throw new CartError(`« ${cat.name} » est réservé aux clubs : demandez-nous un devis`);
       let variant = null;
       if (cat.variants.length) {
         variant = cat.variants.find((v) => v.id === raw.variantId);
@@ -38,11 +39,17 @@ export async function buildItems(rawItems, { requireKeychains = true, legacyKeyc
         personalization = clean(raw.personalization, cat.personalization.maxLength);
         if (cat.personalization.required && !personalization) throw new CartError(`${cat.personalization.label} manquant pour « ${cat.name} »`);
       }
+      const colors = {};
+      for (const part of cat.colorParts || []) {
+        const color = getColor(raw.colors?.[part.id]);
+        if (!color || !color.available) throw new CartError(`Choisissez une couleur disponible pour « ${part.label} » (${cat.name})`);
+        colors[part.id] = { id: color.id, name: color.name, hex: color.hex, part: part.label };
+      }
       const fee = personalizationFee(cat, personalization);
       items.push({
         kind: 'catalog', productId: cat.id, productRef: cat.ref, name: cat.name,
         variantId: variant?.id ?? null, variantName: variant?.name ?? null, variantRef: variant?.ref ?? null,
-        personalization, personalizationFee: fee, image: variant?.image || cat.images[0] || '', unitPrice: Math.round((unitPrice(cat, variant) + fee) * 1000) / 1000, qty,
+        personalization, personalizationFee: fee, ...(Object.keys(colors).length ? { colors } : {}), image: variant?.image || cat.images[0] || '', unitPrice: Math.round((unitPrice(cat, variant) + fee) * 1000) / 1000, qty,
       });
       continue;
     }

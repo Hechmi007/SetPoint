@@ -1,4 +1,5 @@
-// GET /api/products          — published catalog products (cards for the shop grid)
+// GET /api/products          — published products for the shop grid (club-only products excluded)
+// GET /api/products?scope=all — every published product, club-only included (clubs page)
 // GET /api/products?id=slug  — one product with all its details (drafts only for a signed-in admin: preview)
 import { store } from '../lib/db.mjs';
 import { getCatalogProduct, summary } from '../lib/catalog.mjs';
@@ -6,7 +7,8 @@ import { json, error, isAuthorized } from '../lib/http.mjs';
 
 export default async (req) => {
   if (req.method !== 'GET') return error('Méthode non autorisée', 405);
-  const id = new URL(req.url).searchParams.get('id');
+  const url = new URL(req.url);
+  const id = url.searchParams.get('id');
   try {
     if (id) {
       const admin = isAuthorized(req);
@@ -17,7 +19,8 @@ export default async (req) => {
         'cache-control': admin || product.status !== 'published' ? 'no-store' : 'public, max-age=60' } });
     }
     const rows = await store.find('products', { status: 'published' }, { sortBy: 'createdAt', desc: false });
-    return new Response(JSON.stringify({ products: rows.map(summary) }), { headers: {
+    const all = url.searchParams.get('scope') === 'all';
+    return new Response(JSON.stringify({ products: rows.filter((p) => all || p.audience !== 'clubs').map(summary) }), { headers: {
       'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=60' } });
   } catch (e) {
     console.error('products', e);

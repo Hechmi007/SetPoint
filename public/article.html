@@ -37,6 +37,18 @@
 .qty input{width:44px;border:0;text-align:center;padding:0;font-weight:700;background:transparent;box-shadow:none}
 .buy-row .btn{flex:1 1 180px;text-align:center}
 .perks{margin:14px 0 0;font-size:.85rem;color:var(--mut)}
+/* color choice per part, same palette as the counter */
+.cpart{margin:14px 0 0}.cpart .vlabel{margin:0 0 8px}
+.pal{display:grid;grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:8px;max-width:420px}
+.sw{aspect-ratio:1;border-radius:50%;border:2px solid rgba(0,0,0,.15);cursor:pointer;position:relative;padding:0;transition:transform .15s}
+.sw:hover{transform:scale(1.08)}
+.sw[aria-checked="true"]{box-shadow:0 0 0 3px var(--card),0 0 0 5px var(--g2)}
+.sw[aria-checked="true"]::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;color:var(--chk,#fff);font-size:.95rem}
+.sw:disabled{cursor:not-allowed;opacity:.6;overflow:hidden}
+.sw:disabled::before{content:"";position:absolute;left:50%;top:-10%;width:3px;height:120%;background:#d32f2f;transform:translateX(-50%) rotate(45deg);border-radius:2px}
+.sw:disabled:hover{transform:none}
+.club-badge{display:inline-block;background:#1c1c1c;color:#fff;border-radius:999px;padding:4px 12px;font-size:.78rem;font-weight:800;letter-spacing:.02em}
+.club-box{margin:16px 0 0;padding:14px;border-radius:12px;background:var(--bg,#f6f6f6);font-size:.92rem}
 .desc{font-size:1.05rem;max-width:760px}
 .sec{margin-top:44px;padding:0}
 .sec h2{font-size:clamp(1.4rem,4vw,2rem)}
@@ -102,7 +114,8 @@ figure{margin:0}
 </footer>
 
 <script type="module">
-import { addToCart, money, esc, paragraphs, toast } from '/js/common.js';
+import { addToCart, money, esc, paragraphs, toast, WHATSAPP } from '/js/common.js';
+import { COLORS, getColor } from '/js/products.js';
 
 const page = document.getElementById('page');
 const id = new URLSearchParams(location.search).get('id') || '';
@@ -120,6 +133,13 @@ document.title = `${p.name} — SETPOINT`;
 if (p.status !== 'published') document.getElementById('banner').innerHTML = '<div class="draft-banner">Aperçu — ce produit est en brouillon et n’est pas visible par les clients.</div>';
 
 let variant = p.variants.find((v) => v.available) || null;
+const clubOnly = p.audience === 'clubs';
+// one color per colored part (like the counter): start on the admin's default, or the first color in stock
+const firstAvailable = COLORS.find((c) => c.available)?.id;
+const parts = p.colorParts || [];
+const colors = Object.fromEntries(parts.map((c) => [c.id, getColor(c.default)?.available ? c.default : firstAvailable]));
+const isLight = (hex) => { const n = parseInt(hex.slice(1), 16); return ((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000 > 160; };
+const quoteUrl = () => `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(`Bonjour SETPOINT, je souhaite un devis pour notre club : ${p.name} (réf. ${variant?.ref || p.ref}).\nClub : \nQuantité : `)}`;
 let image = variant?.image || p.images[0] || '';
 // the paid name option adds its fee only once the customer has typed a name
 const nameFee = () => (p.personalization?.enabled && Number(p.personalization.price) && document.getElementById('perso')?.value.trim() ? Number(p.personalization.price) : 0);
@@ -140,14 +160,20 @@ const buybox = () => `
       <div class="variants" id="variants" role="radiogroup" aria-label="${esc(p.variantLabel)}">${p.variants.map((v) => `
         <button type="button" class="vchip ${v.image ? '' : 'txt'}" role="radio" data-v="${esc(v.id)}" aria-checked="${v === variant}" ${v.available ? '' : 'disabled title="Bientôt disponible"'}>
           ${v.image ? `<img src="${esc(v.image)}" alt="" loading="lazy">` : ''}${esc(v.name)}${v.price !== null && v.price !== p.price ? ` <span class="vp">${money(v.price)}</span>` : ''}</button>`).join('')}</div>` : ''}
-    ${p.personalization?.enabled ? `<div class="field perso"><label for="perso">${esc(p.personalization.label)}${p.personalization.required ? '' : ' (facultatif)'}${Number(p.personalization.price) ? ` · +${money(Number(p.personalization.price))}` : ''}</label>
+    ${parts.map((c) => `<div class="cpart"><div class="vlabel">${esc(c.label)} : <span data-cname="${esc(c.id)}">${esc(getColor(colors[c.id])?.name || '—')}</span></div>
+      <div class="pal" role="radiogroup" aria-label="Couleur : ${esc(c.label)}" data-part="${esc(c.id)}">${COLORS.map((x) => x.available
+        ? `<button type="button" class="sw" role="radio" data-color="${x.id}" aria-checked="${colors[c.id] === x.id}" aria-label="${esc(x.name)}" title="${esc(x.name)}" style="background:${x.hex};--chk:${isLight(x.hex) ? '#1c1c1c' : '#fff'}"></button>`
+        : `<button type="button" class="sw" disabled aria-label="${esc(x.name)} — bientôt disponible" title="${esc(x.name)} — bientôt disponible" style="background:${x.hex}"></button>`).join('')}</div></div>`).join('')}
+    ${p.personalization?.enabled && !clubOnly ? `<div class="field perso"><label for="perso">${esc(p.personalization.label)}${p.personalization.required ? '' : ' (facultatif)'}${Number(p.personalization.price) ? ` · +${money(Number(p.personalization.price))}` : ''}</label>
       <input id="perso" maxlength="${p.personalization.maxLength}" placeholder="Ex. Amine"></div>` : ''}
-    <div class="buy-row">
+    ${clubOnly ? `<div class="club-box"><span class="club-badge">Réservé aux clubs</span><p style="margin:10px 0 0">Produit proposé uniquement aux clubs, en volume et aux couleurs du club. Écrivez-nous pour un devis.</p></div>
+    <a class="btn p" id="quote" target="_blank" rel="noopener" href="${quoteUrl()}" style="display:block;text-align:center;margin-top:12px">Demander un devis sur WhatsApp</a>
+    <p class="perks"><a href="/clubs">← Tous les produits pour les clubs</a></p>` : `<div class="buy-row">
       <div class="qty"><button type="button" id="minus" aria-label="Moins">−</button><input id="qty" type="number" min="1" max="20" value="1" inputmode="numeric" aria-label="Quantité"><button type="button" id="plus" aria-label="Plus">+</button></div>
       <button class="btn p" id="add" type="button">Ajouter au panier</button>
     </div>
     <button class="btn s" id="buyNow" type="button" style="width:100%;margin-top:10px">Commander maintenant</button>
-    <p class="perks">🚚 Livraison dans les 24 gouvernorats, offerte dès 100 DT · 🎁 Un porte-clé prénom offert avec chaque compteur</p>
+    <p class="perks">🚚 Livraison dans les 24 gouvernorats, offerte dès 100 DT</p>`}
   </div>`;
 
 const sections = () => (p.description ? `<div class="sec desc">${paragraphs(p.description)}</div>` : '') + p.sections.map((s) => {
@@ -168,13 +194,15 @@ if (p.layout === 'gallery') {
   page.innerHTML = `<div class="lay-story">
     <header class="story-hero" style="${image ? `background-image:url('${esc(p.images[0])}')` : ''}"><div class="ov">
       ${p.category ? `<span class="tag">${esc(p.category)}</span>` : ''}<h1>${esc(p.name)}</h1>${p.tagline ? `<p>${esc(p.tagline)}</p>` : ''}
-      <a class="btn p" href="#acheter">Commander · ${money(p.variants.length ? Math.min(p.price, ...p.variants.filter((v) => v.available).map((v) => v.price ?? p.price)) : p.price)}</a></div></header>
+      <a class="btn p" href="#acheter">${clubOnly ? 'Demander un devis' : 'Commander'} · ${money(p.variants.length ? Math.min(p.price, ...p.variants.filter((v) => v.available).map((v) => v.price ?? p.price)) : p.price)}</a></div></header>
     <div class="w">${sections()}<div class="buywrap"><div>${gallery()}</div>${buybox()}</div></div></div>`;
 } else {
   page.innerHTML = `<div class="lay-classic"><div class="w"><div class="top"><div>${gallery()}</div>${buybox()}</div>${sections()}</div></div>`;
 }
 page.insertAdjacentHTML('beforeend', '<div style="height:64px"></div>');
 document.getElementById('mbar').hidden = false;
+if (clubOnly) { $m('madd').textContent = 'Demander un devis'; }
+function $m(x) { return document.getElementById(x); }
 
 // ---------- interactions ----------
 const $ = (x) => document.getElementById(x);
@@ -184,6 +212,12 @@ function setImage(u) {
   document.querySelectorAll('#thumbs [data-img]').forEach((b) => b.setAttribute('aria-current', b.dataset.img === u));
 }
 function refresh() {
+  if ($('quote')) $('quote').href = quoteUrl();
+  for (const c of parts) {
+    document.querySelector(`[data-cname="${CSS.escape(c.id)}"]`).textContent = getColor(colors[c.id])?.name || '—';
+    document.querySelectorAll(`[data-part="${CSS.escape(c.id)}"] [data-color]`).forEach((b) => b.setAttribute('aria-checked', b.dataset.color === colors[c.id]));
+  }
+  if (!$('qty')) { $('price').textContent = money(price()); $('mprice').textContent = money(price()); $('ref').textContent = variant?.ref || p.ref; if ($('vname')) $('vname').textContent = variant?.name || '—'; document.querySelectorAll('[data-v]').forEach((b) => b.setAttribute('aria-checked', b.dataset.v === variant?.id)); return; }
   $('price').textContent = money(price());
   $('mprice').textContent = money(price() * getQty());
   $('ref').textContent = variant?.ref || p.ref;
@@ -195,6 +229,15 @@ $('variants')?.addEventListener('click', (e) => {
   const b = e.target.closest('[data-v]'); if (!b || b.disabled) return;
   variant = p.variants.find((v) => v.id === b.dataset.v); setImage(variant.image); refresh();
 });
+document.querySelectorAll('.pal[data-part]').forEach((pal) => pal.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-color]'); if (!b || b.disabled) return;
+  colors[pal.dataset.part] = b.dataset.color; refresh();
+}));
+if (clubOnly) {
+  $('madd').onclick = () => window.open(quoteUrl(), '_blank', 'noopener');
+  refresh();
+  throw new Error('club-only: no cart');   // stop here: no quantity or cart buttons on this page
+}
 const qty = $('qty');
 const getQty = () => Math.min(20, Math.max(1, parseInt(qty.value) || 1));
 qty.addEventListener('input', refresh);
@@ -208,7 +251,7 @@ function add() {
   if (p.personalization?.enabled && p.personalization.required && !perso) {
     $('perso').classList.add('invalid'); $('perso').focus(); toast(`${p.personalization.label} : à remplir`); return false;
   }
-  addToCart({ kind: 'catalog', productId: p.id, variantId: variant?.id || null, personalization: perso, qty: getQty(),
+  addToCart({ kind: 'catalog', productId: p.id, variantId: variant?.id || null, personalization: perso, qty: getQty(), ...(parts.length ? { colors: { ...colors }, colorLabels: Object.fromEntries(parts.map((c) => [c.id, c.label])) } : {}),
     name: p.name, variantName: variant?.name || null, price: price(), image: variant?.image || p.images[0] || '' });
   return true;
 }

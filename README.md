@@ -37,6 +37,13 @@ Everything lives in [`public/js/products.js`](public/js/products.js):
 - Change price, part names, presets there. The server recomputes prices from this file.
 - New product: draw an SVG in `public/products/`, tag each colorable piece with `data-part="..."`, add an entry to `PRODUCTS`.
 
+Other products (keychains, can opener…) are created in the admin, **Produits** tab:
+- **Variantes**: models / sizes, each with its own price, photo and reference.
+- **Couleurs**: add the pieces to color (e.g. "Balle", "Coutures"); customers pick from the same palette as the counter, so an `available: false` color is crossed out everywhere.
+
+The **Clubs** page ([`/clubs`](public/clubs.html)) is edited in the admin **Clubs** tab, separately from the shop: page title and intro, then simple product cards (title, photos, description, optional price; no price = "Sur devis"), each with a WhatsApp "Demander un devis" button. A checkbox also lists the shop products at the bottom of the page.
+- The free name keychain only comes with score counters.
+
 ## Admin security
 
 - The dashboard only exists at `/a/<ADMIN_PATH>` (48 random characters, stored only in env vars, never in this public repo).

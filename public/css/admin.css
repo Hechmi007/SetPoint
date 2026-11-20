@@ -199,3 +199,15 @@ button.x{color:#a3000e!important}
   .prow input{appearance:none;width:16px;height:16px;border:1.5px solid #333;border-radius:3px}
   .prow input:checked{background:#333}
 }
+
+/* colored parts in the product editor */
+.ed-cp-def{display:flex;gap:8px;align-items:center}.ed-cp-def select{flex:1;padding:8px 10px}.ed-cp-def .dot{width:24px;height:24px;border-radius:50%;border:1px solid rgba(0,0,0,.25);flex:none}
+
+/* Clubs tab */
+#clubsEd,.cl-items{display:grid;gap:14px}
+.cl-head{display:flex;gap:6px;align-items:center;margin-bottom:12px}
+.cl-head .x{border:1.5px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;width:28px;height:28px;cursor:pointer;font-weight:700}
+.cl-head .x:disabled{opacity:.35;cursor:default}
+#view-clubs textarea{width:100%;font:inherit}
+.ck{display:flex;gap:8px;align-items:center;font-size:.9rem;font-weight:600}
+.ck input{width:auto;flex:none;margin:0}

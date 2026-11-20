@@ -4,7 +4,7 @@
 // (pages always escape it), image URLs are restricted, prices are numbers.
 import crypto from 'node:crypto';
 import { store } from './db.mjs';
-import { PRODUCTS } from '../../public/js/products.js';
+import { PRODUCTS, COLORS, getColor } from '../../public/js/products.js';
 
 export const LAYOUTS = ['classic', 'gallery', 'story'];
 export const SECTION_TYPES = ['text', 'features', 'image', 'specs'];
@@ -75,9 +75,21 @@ export function cleanProduct(raw, { existingId } = {}) {
   const fee = p.price === '' || p.price == null ? 0 : money(p.price);
   if (fee === null) throw new Invalid('Supplément de personnalisation invalide');
 
+  // colored parts, like the counter: the customer picks one color per part from the shop's filament palette
+  const colorParts = [];
+  for (const cp of (Array.isArray(raw.colorParts) ? raw.colorParts : []).slice(0, 6)) {
+    const label = line(cp?.label, 40);
+    if (!label) continue;
+    const pid = slugify(cp.id) || slugify(label);
+    if (!pid) continue;
+    if (colorParts.some((x) => x.id === pid)) throw new Invalid(`Deux pièces à colorer portent le même nom : « ${label} »`);
+    colorParts.push({ id: pid, label, default: getColor(cp.default)?.id || COLORS.find((c) => c.available)?.id || COLORS[0].id });
+  }
+
   return {
     id, ref, name, price,
     status: raw.status === 'published' ? 'published' : 'draft',
+    audience: raw.audience === 'clubs' ? 'clubs' : 'public',      // 'clubs' = clubs page only, sold on quote
     category: line(raw.category, 40),
     tagline: line(raw.tagline, 160),
     description: text(raw.description, 3000),
@@ -86,6 +98,7 @@ export function cleanProduct(raw, { existingId } = {}) {
     sections: (Array.isArray(raw.sections) ? raw.sections : []).slice(0, 20).map(cleanSection).filter(Boolean),
     variantLabel: line(raw.variantLabel, 40) || 'Modèle',
     variants,
+    colorParts,
     personalization: { enabled: bool(p.enabled), label: line(p.label, 80) || 'Prénom à graver', maxLength, required: bool(p.required), price: fee },
   };
 }
@@ -105,7 +118,7 @@ export async function getCatalogProduct(id, { includeDrafts = false } = {}) {
 export function summary(p) {
   const prices = [p.price, ...p.variants.filter((v) => v.available && v.price !== null).map((v) => v.price)];
   return { id: p.id, ref: p.ref, name: p.name, tagline: p.tagline, category: p.category, image: p.images[0] || '',
-    price: p.price, minPrice: Math.min(...prices), status: p.status, kind: 'catalog' };
+    price: p.price, minPrice: Math.min(...prices), status: p.status, audience: p.audience || 'public', colors: (p.colorParts || []).length, kind: 'catalog' };
 }
 
 export const newImageId = () => crypto.randomBytes(16).toString('hex');

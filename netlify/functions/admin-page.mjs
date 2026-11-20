@@ -36,6 +36,7 @@ const PAGE = `<!DOCTYPE html>
     <a href="#production" data-tab="production">🖨️ Production <span class="tb" id="tbProd"></span></a>
     <a href="#produits" data-tab="produits">🏷️ Produits</a>
     <a href="#promos" data-tab="promos">🎟️ Codes promo</a>
+    <a href="#clubs" data-tab="clubs">🤝 Clubs</a>
     <span class="tabs-right"><span class="note" id="updated"></span><button class="btn s sm" id="refresh">↻</button></span>
   </nav>
 
@@ -73,6 +74,13 @@ const PAGE = `<!DOCTYPE html>
       <p class="note" style="margin-top:-8px">Donnez un code (ou son lien) à un coach, un club ou une marque : leurs clients obtiennent la réduction, et vous voyez ce que chaque code rapporte.</p>
       <div class="stats" id="promoStats"></div>
       <div class="pgrid cpgrid" id="promoList" style="margin-top:16px"></div>
+    </section>
+
+    <section id="view-clubs" class="view" hidden>
+      <div class="top"><h1>Page Clubs</h1><a class="btn s sm" href="/clubs" target="_blank" rel="noopener">Voir la page</a><button class="btn p sm" id="clubsSave" type="button" disabled>Enregistrer</button></div>
+      <p class="note" style="margin-top:-8px">Ce que voient les clubs sur la page /clubs : vos produits pour clubs avec un titre, des photos, une description et un prix si vous voulez (sinon « sur devis »). <strong id="clubsState"></strong></p>
+      <div id="clubsEd"></div>
+      <input type="file" id="clubsFiles" accept="image/jpeg,image/png,image/webp" multiple hidden>
     </section>
   </main>
 </div>

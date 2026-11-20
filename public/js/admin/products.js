@@ -3,6 +3,7 @@
 // buttons (data-act) change its structure and re-draw the form.
 import { toast } from '/js/common.js';
 import { $, api, esc, money } from '/js/admin/core.js';
+import { COLORS } from '/js/products.js';
 
 let list = [], builtIn = [];
 let ed = null; // { id: existing id or null, p: product being edited }
@@ -14,7 +15,7 @@ const LAYOUTS = [
 ];
 const SECTIONS = { text: '📝 Texte', features: '⭐ Points forts', image: '🖼️ Image', specs: '📐 Caractéristiques' };
 const blank = () => ({ name: '', ref: '', category: 'Porte-clés', price: '', status: 'draft', tagline: '', description: '', layout: 'classic',
-  images: [], sections: [], variantLabel: 'Couleur', variants: [], personalization: { enabled: false, label: 'Prénom à graver', maxLength: 15, required: false, price: '' } });
+  images: [], sections: [], variantLabel: 'Modèle', variants: [], colorParts: [], audience: 'public', personalization: { enabled: false, label: 'Prénom à graver', maxLength: 15, required: false, price: '' } });
 
 export async function load() {
   try {
@@ -28,9 +29,9 @@ function renderList() {
     <div class="pimg">${p.image || p.images?.[0] ? `<img src="${esc(p.image || p.images[0])}" alt="">` : '<span>🏷️</span>'}</div>
     <div class="pbody">
       <div class="prow-top"><span class="mono">${esc(p.ref)}</span>${custom ? '<span class="badge st-confirmed">Personnalisable · intégré</span>'
-        : `<span class="badge ${p.status === 'published' ? 'st-delivered' : 'st-cancelled'}">${p.status === 'published' ? 'Publié' : 'Brouillon'}</span>`}</div>
+        : `<span class="badge ${p.status === 'published' ? 'st-delivered' : 'st-cancelled'}">${p.status === 'published' ? 'Publié' : 'Brouillon'}</span>${p.audience === 'clubs' ? ' <span class="badge st-production">Clubs</span>' : ''}`}</div>
       <h3>${esc(p.name)}</h3>
-      <div class="note">${money(p.price)}${custom ? '' : ` · ${p.variants.length} variante(s)${p.personalization?.enabled ? ` · personnalisable${p.personalization.price ? ' (+' + money(p.personalization.price) + ')' : ''}` : ''}`}</div>
+      <div class="note">${money(p.price)}${custom ? '' : ` · ${p.variants.length} variante(s)${p.colorParts?.length ? ` · ${p.colorParts.length} couleur(s) au choix` : ''}${p.personalization?.enabled ? ` · personnalisable${p.personalization.price ? ' (+' + money(p.personalization.price) + ')' : ''}` : ''}`}</div>
       <div class="pactions">${custom ? `<a class="btn s sm" href="/produit?id=${esc(p.id)}" target="_blank">Voir</a><span class="note">Couleurs et prix : fichier products.js</span>`
         : `<button type="button" class="btn p sm" data-edit="${esc(p.id)}">Modifier</button><button type="button" class="btn s sm" data-preview="${esc(p.id)}">Aperçu</button><button type="button" class="btn s sm danger" data-del="${esc(p.id)}">Supprimer</button>`}</div>
     </div></article>`;
@@ -78,6 +79,7 @@ const confirmLeave = () => JSON.stringify(ed?.p) === savedJson || confirm('Quitt
 
 function openEditor(p) {
   ed = { id: p?.id || null, p: structuredClone(p ? stripMeta(p) : blank()) };
+  ed.p.colorParts ||= []; ed.p.audience ||= 'public';   // products created before these options
   savedJson = JSON.stringify(ed.p);
   draw();
   $('editor').showModal();
@@ -117,6 +119,8 @@ async function act(a, d) {
     case 'spec-del': p.sections[i].rows.splice(j, 1); break;
     case 'var-add': p.variants.push({ name: '', ref: '', price: '', image: '', available: true }); break;
     case 'var-del': p.variants.splice(i, 1); break;
+    case 'cp-add': p.colorParts.push({ label: '', default: (COLORS.find((x) => x.available) || COLORS[0]).id }); break;
+    case 'cp-del': p.colorParts.splice(i, 1); break;
     case 'var-up': move(p.variants, i, -1); break;
     case 'var-down': move(p.variants, i, 1); break;
     default: return;
@@ -125,7 +129,7 @@ async function act(a, d) {
 }
 
 // ---------- photos: resized in the browser (max 1400px, JPEG) then uploaded ----------
-async function resize(file, max = 1400) {
+export async function resize(file, max = 1400) {
   const bmp = await createImageBitmap(file);
   const s = Math.min(1, max / Math.max(bmp.width, bmp.height));
   const c = document.createElement('canvas');
@@ -192,7 +196,7 @@ function draw() {
         <div class="field"><label>Référence *</label><input data-k="ref" value="${v(p.ref)}" placeholder="SP-PC-001" maxlength="30" style="text-transform:uppercase"></div>
         <div class="field"><label>Prix (DT) *</label><input data-k="price" value="${v(p.price)}" inputmode="decimal" placeholder="15"></div>
         <div class="field"><label>Catégorie</label><input data-k="category" value="${v(p.category)}" placeholder="Porte-clés" maxlength="40"></div>
-        <div class="field"><label>Statut</label><select data-k="status"><option value="draft" ${p.status !== 'published' ? 'selected' : ''}>Brouillon (caché)</option><option value="published" ${p.status === 'published' ? 'selected' : ''}>Publié (visible en boutique)</option></select></div>
+        <div class="field"><label>Statut</label><select data-k="status"><option value="draft" ${p.status !== 'published' ? 'selected' : ''}>Brouillon (caché)</option><option value="published" ${p.status === 'published' ? 'selected' : ''}>Publié (visible)</option></select></div>
         <div class="field full"><label>Accroche (une phrase)</label><input data-k="tagline" value="${v(p.tagline)}" maxlength="160" placeholder="Votre prénom, votre sport, imprimé en 3D en Tunisie."></div>
         <div class="field full"><label>Description</label><textarea data-k="description" rows="4" maxlength="3000" placeholder="Laissez une ligne vide pour commencer un nouveau paragraphe.">${v(p.description)}</textarea></div>
       </div>
@@ -217,7 +221,7 @@ function draw() {
     </section>
 
     <section class="ed-card">
-      <h3>4. Variantes <span class="note">(couleurs, modèles… laissez vide s’il n’y en a pas)</span></h3>
+      <h3>4. Variantes <span class="note">(modèles, tailles… laissez vide s’il n’y en a pas · les couleurs se choisissent dans la section 5)</span></h3>
       <div class="field" style="max-width:280px"><label>Nom du choix affiché au client</label><input data-k="variantLabel" value="${v(p.variantLabel)}" placeholder="Couleur, Modèle, Sport…" maxlength="40"></div>
       ${p.variants.length ? `<div class="ed-vars"><div class="ed-var head"><span>Nom</span><span>Référence</span><span>Prix (vide = ${v(p.price || 'prix du produit')})</span><span>Photo</span><span>Dispo</span><span></span></div>
         ${p.variants.map((x, n) => `<div class="ed-var">
@@ -232,7 +236,17 @@ function draw() {
     </section>
 
     <section class="ed-card">
-      <h3>5. Personnalisation</h3>
+      <h3>5. Couleurs <span class="note">(comme le compteur : le client choisit une couleur par pièce)</span></h3>
+      ${(p.colorParts || []).map((c, n) => `<div class="ed-row2 ed-cp">
+        <input data-k="colorParts.${n}.label" value="${v(c.label)}" placeholder="Balle, Coutures, Anneau…" maxlength="40" aria-label="Nom de la pièce">
+        <span class="ed-cp-def"><i class="dot" style="background:${(COLORS.find((x) => x.id === c.default) || {}).hex || '#ccc'}"></i><select data-k="colorParts.${n}.default" data-redraw aria-label="Couleur proposée par défaut">${COLORS.map((x) => `<option value="${x.id}" ${x.id === c.default ? 'selected' : ''}>${esc(x.name)}${x.available ? '' : ' (bientôt)'}</option>`).join('')}</select><span class="note">par défaut</span></span>
+        <button data-act="cp-del" data-i="${n}" class="x" title="Supprimer">✕</button></div>`).join('')}
+      <button class="btn s sm" data-act="cp-add" type="button">+ Ajouter une pièce à colorer</button>
+      <p class="note" style="margin:10px 0 0">Les clients voient la même palette que pour le compteur (couleurs barrées = bientôt disponibles). Les couleurs en stock se règlent dans <span class="mono">public/js/products.js</span>, pour tous les produits à la fois.</p>
+    </section>
+
+    <section class="ed-card">
+      <h3>6. Personnalisation</h3>
       <label class="chk-inline"><input type="checkbox" data-k="personalization.enabled" data-redraw ${p.personalization.enabled ? 'checked' : ''}> Le client peut écrire un texte (prénom, initiales…)</label>
       ${p.personalization.enabled ? `<div class="form-grid" style="margin-top:12px">
         <div class="field"><label>Question posée</label><input data-k="personalization.label" value="${v(p.personalization.label)}" maxlength="80"></div>
@@ -242,7 +256,7 @@ function draw() {
     </section>
 
     <section class="ed-card">
-      <h3>6. Sections de la page <span class="note">(dans l’ordre d’affichage, après la description)</span></h3>
+      <h3>7. Sections de la page <span class="note">(dans l’ordre d’affichage, après la description)</span></h3>
       ${p.sections.map((s, n) => `<div class="ed-sec">
         <div class="ed-sec-head"><strong>${SECTIONS[s.type]}</strong>
           <span class="ed-mini"><button data-act="sec-up" data-i="${n}" ${n === 0 ? 'disabled' : ''}>↑</button><button data-act="sec-down" data-i="${n}" ${n === p.sections.length - 1 ? 'disabled' : ''}>↓</button><button data-act="sec-del" data-i="${n}" class="x">✕</button></span></div>

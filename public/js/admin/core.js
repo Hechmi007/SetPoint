@@ -37,6 +37,7 @@ export function itemDetails(it) {
       ${it.keychains?.length ? `<div class="cnt">🎁 Porte-clés : <strong>&nbsp;${esc(it.keychains.join(', '))}</strong></div>` : ''}`;
   }
   return `${refs}${it.variantName ? `<div class="cnt">Variante : <strong>&nbsp;${esc(it.variantName)}</strong></div>` : ''}
+    ${it.colors ? Object.values(it.colors).map((c) => `<div class="cnt"><i style="background:${c.hex}"></i>${esc(c.part)} : <strong>&nbsp;${esc(c.name)}</strong></div>`).join('') : ''}
     ${it.personalization ? `<div class="cnt">✏️ Personnalisation : <strong>&nbsp;« ${esc(it.personalization)} »</strong>${it.personalizationFee ? `&nbsp;<span class="note">(+${money(it.personalizationFee)})</span>` : ''}</div>` : ''}`;
 }
 
@@ -55,6 +56,12 @@ export function orderPieces(o) {
         out.push({ key: `${i}:${pid}`, group: `color:${c.id}`, color: c, label: `${c.part} · ${it.name}`, qty: it.qty,
           extra: pid === 'writing' && it.font ? `Police ${it.font.name}` : '' });
       }
+    } else if (it.colors && Object.keys(it.colors).length) {
+      // catalog product with colored parts: one piece per part, grouped by filament like the counters
+      for (const [pid, c] of Object.entries(it.colors)) {
+        out.push({ key: `${i}:${pid}`, group: `color:${c.id}`, color: c, label: `${c.part} · ${it.name}${it.variantName ? ` — ${it.variantName}` : ''}`, qty: it.qty,
+          extra: it.personalization ? `« ${it.personalization} »` : '' });
+      }
     } else {
       out.push({ key: `${i}:item`, group: `product:${it.productId}:${it.variantId || ''}`, image: it.image,
         label: it.name + (it.variantName ? ` — ${it.variantName}` : ''), qty: it.qty,
@@ -63,7 +70,8 @@ export function orderPieces(o) {
   });
   if (o.keychainNames?.length) {
     o.keychainNames.forEach((n, k) => out.push({ key: `gift:${k}`, group: 'gift', label: 'Porte-clé prénom offert', qty: 1, extra: n ? `« ${n} »` : 'prénom non précisé' }));
-  } else {
+  } else if (!o.keychainNames && o.items.some(isCustom)) {
+    // orders placed before one name per counter: a single gift keychain (only counters come with one)
     out.push({ key: 'gift', group: 'gift', label: 'Porte-clé prénom offert', qty: 1, extra: o.keychainName ? `« ${o.keychainName} »` : 'prénom non précisé' });
   }
   return out.map((p) => ({ ...p, done: !!o.printed?.[p.key] }));

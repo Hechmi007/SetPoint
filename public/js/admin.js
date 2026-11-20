@@ -6,6 +6,7 @@ import { $, api, session, esc, money, statusLabel, statusSelect, fmtDate, itemTh
 import * as production from '/js/admin/production.js';
 import * as products from '/js/admin/products.js';
 import * as promos from '/js/admin/promos.js';
+import * as clubs from '/js/admin/clubs.js';
 
 // The dashboard lives at /a/<ADMIN_PATH>; the same secret must accompany the login.
 const adminKey = decodeURIComponent(location.pathname.split('/')[2] || '');
@@ -68,11 +69,12 @@ function renderAll() {
 // ---------- tabs ----------
 const currentTab = () => (location.hash.slice(1) || 'commandes');
 function showTab() {
-  const tab = ['commandes', 'production', 'produits', 'promos'].includes(currentTab()) ? currentTab() : 'commandes';
+  const tab = ['commandes', 'production', 'produits', 'promos', 'clubs'].includes(currentTab()) ? currentTab() : 'commandes';
   document.querySelectorAll('.view').forEach((v) => { v.hidden = v.id !== `view-${tab}`; });
   document.querySelectorAll('#tabs [data-tab]').forEach((a) => a.setAttribute('aria-current', a.dataset.tab === tab ? 'page' : 'false'));
   if (tab === 'produits') products.load();
   if (tab === 'promos') promos.load();
+  if (tab === 'clubs') clubs.load();
 }
 addEventListener('hashchange', showTab);
 
@@ -198,6 +200,7 @@ $('notifyTest').onclick = async () => {
 production.init(ctx);
 products.init();
 promos.init(ctx);
+clubs.init();
 let timer;
 function start() {
   $('login').hidden = true; $('app').hidden = false; $('logout').hidden = false;
